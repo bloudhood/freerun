@@ -142,7 +142,7 @@
                 key="single-submit"
                 type="submit"
                 class="w-full p-2 font-semibold theme-text-primary theme-card-soft rounded-full disabled:cursor-not-allowed disabled:opacity-60"
-                :disabled="submitting || !isDistanceValid"
+                :disabled="submitting || !isFormValid"
               >
                 提交记录
               </button>
@@ -158,7 +158,7 @@
                 <button
                   type="button"
                   class="flex-1 p-2 rounded-full submit-confirm-ok disabled:cursor-not-allowed disabled:opacity-70"
-                  :disabled="submitting || !isDistanceValid"
+                  :disabled="submitting || !isFormValid"
                   @click="confirmSubmit"
                 >
                   <i v-if="!submitting" class="ri-check-fill"></i>
@@ -209,6 +209,7 @@ import {
   normalizeRoundedRunTime,
   randomIntNonThousand,
   resolveRunBoundsFromStandard,
+  isPaceWithinLimits,
 } from '@/utils/run';
 
 const MapPreview = defineAsyncComponent(() => import('./MapPreview.vue'));
@@ -263,8 +264,21 @@ const isDistanceValid = computed(() => {
   return Number.isInteger(distance) && distance > 0;
 });
 
+const isPaceValid = computed(() => {
+  const distance = Number(form.value.distance);
+  const time = userDuration.value || Math.floor(predictedRunTime.value);
+  if (!distance || !time) return false;
+  return isPaceWithinLimits(distance, time);
+});
+
+const isFormValid = computed(() => {
+  return isDistanceValid.value && isPaceValid.value;
+});
+
 const distanceErrorText = computed(() => {
-  return '跑步里程需为大于 0 的整数';
+  if (!isDistanceValid.value) return '跑步里程需为大于 0 的整数';
+  if (!isPaceValid.value) return '配速不合理，请控制在 4.0 - 10.0 km/h 之间';
+  return '';
 });
 
 const predictedRunTime = ref(0);
@@ -549,7 +563,7 @@ const handleSubmit = async () => {
 };
 
 const requestSubmitConfirm = () => {
-  if (!isDistanceValid.value) {
+  if (!isFormValid.value) {
     showMessage(distanceErrorText.value, 'error');
     return;
   }

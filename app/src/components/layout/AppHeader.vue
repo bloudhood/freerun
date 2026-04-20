@@ -98,7 +98,6 @@ import { ref, computed, getCurrentInstance, watch, onUnmounted } from 'vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import { urls } from '@/sdk/app';
 import { useDataStore } from '@/composables/useDataStore';
-import { useChatStore } from '@/composables/useChatStore';
 import { useThemeStore } from '@/composables/useTheme';
 
 const githubUrl = urls.github || 'https://github.com/yanyaoli/byerun-web';
@@ -116,7 +115,6 @@ const confirmDialogRef = ref(null);
 const themeStore = useThemeStore();
 const isDark = computed(() => themeStore.isDark);
 const { userInfo, clearAllData } = useDataStore();
-const { clearChatData } = useChatStore();
 const welcomePhase = ref('logo');
 const hasPlayedWelcome = ref(false);
 const timers = [];
@@ -210,7 +208,6 @@ const handleLogout = async () => {
     } else {
       try {
         clearAllData();
-        clearChatData();
       } catch (e) {}
       window.location.reload();
     }

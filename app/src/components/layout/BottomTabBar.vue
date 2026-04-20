@@ -21,10 +21,6 @@
       >
         <div class="relative flex items-center justify-center w-6 h-6 z-10">
           <i :class="item.icon" class="text-[19px]"></i>
-          <span
-            v-if="item.key === 'chat' && chatUnread && active !== 'chat'"
-            class="absolute -top-1 -right-1.5 h-2.5 w-2.5 rounded-full bg-rose-500 border border-white"
-          ></span>
         </div>
         <div class="text-[10px] mt-0.5 text-center z-10">{{ item.label }}</div>
       </button>
@@ -37,7 +33,6 @@ const emit = defineEmits(['update:active', 'switch']);
 
 defineProps({
   active: { type: String, default: 'submit' },
-  chatUnread: { type: Boolean, default: false },
   isDarkMode: { type: Boolean, default: false },
   tabs: {
     type: Array,
@@ -45,7 +40,6 @@ defineProps({
       { key: 'club', label: '俱乐部', icon: 'ri-basketball-line' },
       { key: 'records', label: '记录', icon: 'ri-task-line' },
       { key: 'submit', label: '管理', icon: 'ri-command-line' },
-      { key: 'chat', label: '消息', icon: 'ri-message-3-line' },
       { key: 'my', label: '我的', icon: 'ri-user-smile-line' },
     ],
   },

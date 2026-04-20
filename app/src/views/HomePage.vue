@@ -1,10 +1,9 @@
 ﻿<template>
   <div class="h-full min-h-0 flex flex-col overflow-hidden">
-    <AppHeader v-show="activeKey !== 'chat'" ref="appHeaderRef" :scrolled="headerCompact" />
+    <AppHeader ref="appHeaderRef" :scrolled="headerCompact" />
 
     <div class="flex-1 flex flex-col min-h-0 w-full mx-auto p-0 relative">
       <main
-        v-show="activeKey !== 'chat'"
         ref="mainScrollRef"
         class="relative overflow-y-auto w-full box-border px-4"
         :style="{
@@ -24,19 +23,11 @@
           <MyPage v-else-if="activeKey === 'my'" :key="'my'" />
         </keep-alive>
       </main>
-
-      <div v-show="activeKey === 'chat'" class="flex-1 min-h-0">
-        <keep-alive>
-          <ChatPage v-if="chatMounted" />
-        </keep-alive>
-      </div>
     </div>
 
     <BottomTabBar
-      v-show="activeKey !== 'chat'"
       ref="bottomBarRef"
       :active="activeKey"
-      :chat-unread="chatUnread"
       :is-dark-mode="isDark"
       @update:active="setActiveKey"
     />
@@ -48,19 +39,15 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch, provide, inject
 import RunRecords from '@/components/RunRecords.vue';
 import Club from '@/components/Club.vue';
 import SubmitRun from '@/components/SubmitRun.vue';
-import ChatPage from '@/views/ChatPage.vue';
 import AppHeader from '@/components/layout/AppHeader.vue';
 import BottomTabBar from '@/components/layout/BottomTabBar.vue';
 import MyPage from '@/views/MyPage.vue';
 import { useDataStore } from '@/composables/useDataStore';
-import { useChatStore } from '@/composables/useChatStore';
 import { useThemeStore } from '@/composables/useTheme';
 import { preloadAutorunPingMeta } from '@/sdk/autorun';
-import { checkHasUnreadMessages } from '@/sdk/message';
 import { getViewportMetrics } from '@/utils/viewport';
 
 const { fetchUserData, activeTab, userInfo, token } = useDataStore();
-const { chatUnread, setChatUnread, markChatSeen } = useChatStore();
 const themeStore = useThemeStore();
 const isDark = computed(() => themeStore.isDark);
 const rootShowMessage = inject('showMessage', null);
@@ -75,7 +62,6 @@ const headerHeight = ref(HEADER_RESERVED_SPACE);
 const bottomBarOverlayHeight = ref(DEFAULT_BOTTOM_BAR_OVERLAY_HEIGHT);
 const headerCompact = ref(false);
 const activeKey = ref(activeTab.value || 'submit');
-const chatMounted = ref(activeKey.value === 'chat');
 let homeMeasureFrame = 0;
 
 function updateHeaderCompact(top) {
@@ -142,16 +128,9 @@ async function refreshUserData(options = { background: true }) {
   return false;
 }
 
-async function syncUnreadReminder() {
-  if (activeKey.value === 'chat') return;
-  const unread = await checkHasUnreadMessages(token.value || '');
-  setChatUnread(unread);
-}
-
 async function initializePage() {
   await refreshUserData({ background: false });
   await preloadAutorunPingMeta();
-  await syncUnreadReminder();
 }
 
 async function handleRunSubmitted() {
@@ -163,13 +142,7 @@ provide('showMessage', showMessage);
 
 watch(
   activeKey,
-  async (newKey) => {
-    if (newKey === 'chat') {
-      chatMounted.value = true;
-      markChatSeen();
-      return;
-    }
-
+  async () => {
     await nextTick();
     updateHeaderCompact(mainScrollRef.value?.scrollTop || 0);
     scheduleMeasureHeights();
@@ -178,10 +151,6 @@ watch(
 );
 
 onMounted(() => {
-  if (activeKey.value === 'chat') {
-    markChatSeen();
-  }
-
   initializePage().catch(() => {
     showMessage('用户数据刷新失败', 'warning');
   });

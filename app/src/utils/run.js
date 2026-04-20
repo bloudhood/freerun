@@ -1,8 +1,8 @@
 // Default run constraints aligned with autorun-server.
 export const DEFAULT_DISTANCE_MIN = 1001;
 export const DEFAULT_DISTANCE_MAX = 9000;
-export const MIN_PACE_MINUTES_PER_KM = 6;
-export const MAX_PACE_MINUTES_PER_KM = 10;
+export const MIN_PACE_MINUTES_PER_KM = 6;  // 10.0 km/h
+export const MAX_PACE_MINUTES_PER_KM = 15; // 4.0 km/h
 
 // Numeric guards shared by bound/pace helpers.
 const toFiniteNumber = (value, fallback = 0) => {

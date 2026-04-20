@@ -1,37 +1,40 @@
 <template>
   <div
-    class="auth-page h-full min-h-0 w-full flex flex-col justify-center items-center relative px-4 pt-14 theme-text-primary"
+    class="auth-page h-full min-h-0 w-full flex flex-col justify-center items-center relative px-4 pt-14 theme-text-primary animate-fade-in"
   >
     <AppHeader ref="appHeaderRef" :show-github="false" />
 
-    <div class="w-full max-w-[480px] p-6">
-      <div class="mb-4 text-center">
-        <h1 class="text-3xl font-black theme-text-primary mb-4 tracking-tight">Byerun Web</h1>
-        <p class="theme-text-secondary mb-8 text-xm max-w-xs mx-auto leading-relaxed">
-          免费且开源的校园生存工具
-        </p>
+    <div class="w-full max-w-[420px] corner-apple glass-apple animate-slide-up relative z-10">
+      <div class="mb-10 text-center flex flex-col items-center">
+        <!-- Logo Mark -->
+        <div class="w-14 h-14 rounded-[18px] bg-anthropic-orange/10 dark:bg-anthropic-orange/20 flex items-center justify-center mb-5 shadow-inner">
+          <i class="ri-leaf-line text-2xl text-anthropic-orange"></i>
+        </div>
+        <h1 class="text-2xl font-heading font-medium text-anthropic-dark dark:text-anthropic-light tracking-tight mb-2">
+          Byerun Web
+        </h1>
       </div>
-      <form @submit.prevent="handleSubmit" @focusout="handleInputBlur">
-        <div class="mb-4">
-          <label class="block text-sm mb-2 theme-text-secondary">手机号</label>
-          <div class="relative">
+      <form @submit.prevent="handleSubmit" @focusout="handleInputBlur" class="space-y-5">
+        <div>
+          <label class="block text-xs font-semibold mb-2 theme-text-secondary uppercase tracking-wider">手机号</label>
+          <div class="relative group">
             <i
-              class="ri-smartphone-line absolute left-3 top-1/2 -translate-y-1/2 theme-input-icon pointer-events-none"
+              class="ri-smartphone-line absolute left-4 top-1/2 -translate-y-1/2 theme-text-secondary pointer-events-none transition-colors group-focus-within:text-anthropic-orange"
             ></i>
             <input
               v-model="phone"
               placeholder="请输入手机号"
               required
               @blur="handleInputBlur"
-              class="block w-full p-2 pl-9 text-sm border border-dashed rounded-lg bg-transparent focus:outline-none placeholder:text-sm theme-input"
+              class="input-apple block w-full p-3 pl-11 text-sm rounded-xl placeholder:text-sm theme-text-primary"
             />
           </div>
         </div>
-        <div v-if="mode === 'reset'" class="mb-4">
-          <label class="block text-sm mb-2 theme-text-secondary">新密码</label>
-          <div class="relative">
+        <div v-if="mode === 'reset'">
+          <label class="block text-xs font-semibold mb-2 theme-text-secondary uppercase tracking-wider">新密码</label>
+          <div class="relative group">
             <i
-              class="ri-lock-2-line absolute left-3 top-1/2 -translate-y-1/2 theme-input-icon pointer-events-none"
+              class="ri-lock-2-line absolute left-4 top-1/2 -translate-y-1/2 theme-text-secondary pointer-events-none transition-colors group-focus-within:text-anthropic-orange"
             ></i>
             <input
               v-model="password"
@@ -39,44 +42,44 @@
               placeholder="请设置新密码"
               required
               @blur="handleInputBlur"
-              class="block w-full p-2 pl-9 text-sm border border-dashed rounded-lg bg-transparent focus:outline-none placeholder:text-sm theme-input"
+              class="input-apple block w-full p-3 pl-11 text-sm rounded-xl placeholder:text-sm theme-text-primary"
             />
           </div>
         </div>
-        <div v-if="mode === 'reset'" class="mb-4">
-          <label class="block text-sm theme-text-secondary mb-2">验证码</label>
-          <div class="flex gap-2">
-            <div class="relative flex-1">
+        <div v-if="mode === 'reset'">
+          <label class="block text-xs font-semibold mb-2 theme-text-secondary uppercase tracking-wider">验证码</label>
+          <div class="flex gap-3">
+            <div class="relative flex-1 group">
               <i
-                class="ri-key-2-line absolute left-3 top-1/2 -translate-y-1/2 theme-input-icon pointer-events-none"
+                class="ri-key-2-line absolute left-4 top-1/2 -translate-y-1/2 theme-text-secondary pointer-events-none transition-colors group-focus-within:text-anthropic-orange"
               ></i>
               <input
                 v-model="code"
                 placeholder="请输入短信验证码"
                 required
                 @blur="handleInputBlur"
-                class="w-full p-2 pl-9 text-sm border border-dashed rounded-lg bg-transparent focus:outline-none placeholder:text-sm theme-input"
+                class="input-apple w-full p-3 pl-11 text-sm rounded-xl placeholder:text-sm theme-text-primary"
               />
             </div>
             <button
               type="button"
               @click="sendCode"
               :disabled="sending"
-              class="px-3 py-2 rounded-md text-sm font-medium flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap theme-button-primary"
+              class="btn-apple px-4 py-2 rounded-xl text-sm font-medium flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap bg-anthropic-dark dark:bg-anthropic-light text-anthropic-light dark:text-anthropic-dark"
             >
               <span v-if="!sending">发送验证码</span>
               <div
                 v-else
-                class="w-4 h-4 border-2 border-white/30 rounded-full border-t-white animate-spin"
+                class="w-4 h-4 border-2 border-current/30 rounded-full border-t-current animate-spin"
               ></div>
             </button>
           </div>
         </div>
-        <div v-if="mode === 'login'" class="mb-4">
-          <label class="block text-sm mb-2 theme-text-secondary">密码</label>
-          <div class="relative">
+        <div v-if="mode === 'login'">
+          <label class="block text-xs font-semibold mb-2 theme-text-secondary uppercase tracking-wider">密码</label>
+          <div class="relative group">
             <i
-              class="ri-lock-2-line absolute left-3 top-1/2 -translate-y-1/2 theme-input-icon pointer-events-none"
+              class="ri-lock-2-line absolute left-4 top-1/2 -translate-y-1/2 theme-text-secondary pointer-events-none transition-colors group-focus-within:text-anthropic-orange"
             ></i>
             <input
               v-model="password"
@@ -84,34 +87,34 @@
               placeholder="请输入密码"
               required
               @blur="handleInputBlur"
-              class="block w-full p-2 pl-9 text-sm border border-dashed rounded-lg bg-transparent focus:outline-none placeholder:text-sm theme-input"
+              class="input-apple block w-full p-3 pl-11 text-sm rounded-xl placeholder:text-sm theme-text-primary"
             />
           </div>
         </div>
-        <div class="flex items-center justify-between mt-6 mb-8">
+        <div class="flex items-center justify-between mt-2 mb-6">
           <label v-if="mode === 'login'" class="flex items-center space-x-2 cursor-pointer group">
             <input type="checkbox" v-model="rememberMe" class="hidden" />
             <div
-              class="w-2 h-2 border rounded flex items-center justify-center transition-colors auth-remember-box"
-              :class="{ 'is-checked': rememberMe }"
+              class="w-4 h-4 border-2 rounded flex items-center justify-center transition-all duration-300 auth-remember-box"
+              :class="rememberMe ? 'bg-anthropic-orange border-anthropic-orange' : 'border-anthropic-mid-gray/50'"
             >
-              <i v-if="rememberMe" class="ri-check-line text-[10px] text-white"></i>
+              <i v-if="rememberMe" class="ri-check-line text-xs text-white scale-in-center"></i>
             </div>
-            <span class="text-xs theme-link transition">记住我</span>
+            <span class="text-xs font-medium theme-text-secondary group-hover:text-anthropic-dark dark:group-hover:text-anthropic-light transition-colors">记住我</span>
           </label>
           <a
             v-if="mode === 'login'"
             href="#"
             @click.prevent="mode = 'reset'"
-            class="text-xs theme-link"
+            class="text-xs font-medium text-anthropic-orange hover:text-anthropic-dark dark:hover:text-anthropic-light transition-colors ml-auto"
             >忘记密码？</a
           >
         </div>
-        <div class="flex gap-2">
+        <div class="pt-2">
           <button
             type="submit"
             :disabled="loading"
-            class="w-full font-bold text-base rounded-full py-3 shadow-xl active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 theme-button-primary"
+            class="btn-apple w-full font-heading font-medium text-base rounded-2xl py-3.5 bg-anthropic-orange text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
             <span v-if="!loading">{{ mode === 'login' ? '立即登录' : '重置密码' }}</span>
             <div
@@ -120,8 +123,8 @@
             ></div>
           </button>
         </div>
-        <div v-if="mode === 'reset'" class="text-center mt-4">
-          <a href="#" @click.prevent="mode = 'login'" class="text-xs theme-link">返回登录</a>
+        <div v-if="mode === 'reset'" class="text-center mt-6">
+          <a href="#" @click.prevent="mode = 'login'" class="text-sm font-medium text-anthropic-mid-gray hover:text-anthropic-dark dark:hover:text-anthropic-light transition-colors">返回登录</a>
         </div>
       </form>
     </div>
