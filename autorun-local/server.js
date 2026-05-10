@@ -41,7 +41,7 @@ const CONFIG = {
   // App 签名密钥（与前端保持一致，从源码中提取）
   appKey: process.env.APP_KEY || '389885588s0648fa',
   appSecret: process.env.APP_SECRET || '56E39A1658455588885690425C0FD16055A21676',
-  appVersion: '1.8.3',
+  appVersion: '3.6.8',
   // 数据持久化文件路径
   dataFile: path.join(__dirname, 'tasks.json'),
   // 地图文件目录（从项目 app/src/assets/maps 复制过来）
@@ -181,14 +181,14 @@ async function unirunRequest({ path: apiPath, method = 'GET', token = '', query 
 // 登录获取 token（用账号密码换取 token）
 async function loginAndGetToken(userPhone, password) {
   const body = {
-    appVersion: CONFIG.appVersion,
+    appVersions: CONFIG.appVersion,
     password: md5(password),
     userPhone,
     brand: 'Apple',
     deviceToken: '',
     deviceType: '2',
     mobileType: 'iPhone',
-    sysVersion: '18.6',
+    sysVersions: '18.6',
   };
   const data = await unirunRequest({ path: '/auth/login/password', method: 'POST', body });
   if (data?.code === 10000 && data?.response?.token) {
@@ -220,6 +220,7 @@ async function saveRunRecord({ token, trackPoints, runDistance, runTime, userId,
     mobileType: 'iPhone',
     sysVersions: '18.6',
     trackPoints,
+    realityTrackPoints: trackPoints,
     distanceTimeStatus: '1',
     innerSchool: '1',
     runDistance: Math.round(runDistance),
@@ -322,7 +323,9 @@ function genTrackPoints(distance, mapId = 'default', durationMinutes) {
   let elapsedMs = 0;
   let generatedDistance = 0;
   let currentSpeed = baseSpeed;
-  const result = [`${lastPoint[0]}-${lastPoint[1]}`];
+  const startTimestamp = Date.now() - durationMs - Math.floor(Math.random() * 60000);
+  const firstAccuracy = (5 + Math.random() * 10).toFixed(1);
+  const result = [`${lastPoint[0]}-${lastPoint[1]}-${startTimestamp}-${firstAccuracy}`];
 
   while (generatedDistance < targetDistance && result.length < 4000) {
     const remainingDistance = targetDistance - generatedDistance;
@@ -357,7 +360,9 @@ function genTrackPoints(distance, mapId = 'default', durationMinutes) {
     currentSpeed = clamp(currentSpeed * 0.65 + targetSpeed * 0.35, baseSpeed * 0.75, baseSpeed * 1.25);
     elapsedMs += (traveled / Math.max(0.5, currentSpeed)) * 1000;
 
-    result.push(`${point[0]}-${point[1]}`);
+    const pointTimestamp = startTimestamp + Math.round(elapsedMs);
+    const pointAccuracy = (5 + Math.random() * 10).toFixed(1);
+    result.push(`${point[0]}-${point[1]}-${pointTimestamp}-${pointAccuracy}`);
     lastPoint = point;
   }
 

@@ -191,14 +191,14 @@ export class AppApiClient {
   login(userPhone, password) {
     const device = this.deviceResolver();
     return this.http.post('/auth/login/password', {
-      appVersion: this.appVersion,
+      appVersions: this.appVersion,
       password: CryptoJS.MD5(password).toString(),
       userPhone,
       brand: device.brand,
       deviceToken: '',
       deviceType: device.deviceType,
       mobileType: device.mobileType,
-      sysVersion: device.sysVersion,
+      sysVersions: device.sysVersion,
     });
   }
 
@@ -222,7 +222,7 @@ export class AppApiClient {
   }
 
   getRunRecords(pageNum = 1, pageSize = 15) {
-    return this.http.get('/unirun/query/student/all/run/record', {
+    return this.http.get('/unirun/query/run/record', {
       params: { pageNum, pageSize },
     });
   }
@@ -237,6 +237,7 @@ export class AppApiClient {
       mobileType: device.mobileType,
       sysVersions: device.sysVersion,
       trackPoints,
+      realityTrackPoints: trackPoints,
       distanceTimeStatus: '1',
       innerSchool: '1',
       runDistance: Math.round(runDistance),

@@ -174,7 +174,9 @@ export function genTrackPoints(distance, mapChoice = 'default', durationMinutes)
   let elapsedMs = 0;
   let generatedDistance = 0;
   let currentSpeed = baseSpeed;
-  const result = [`${lastPoint[0]}-${lastPoint[1]}`];
+  const startTimestamp = Date.now() - durationMs - Math.floor(Math.random() * 60000);
+  const firstAccuracy = (5 + Math.random() * 10).toFixed(1);
+  const result = [`${lastPoint[0]}-${lastPoint[1]}-${startTimestamp}-${firstAccuracy}`];
 
   while (generatedDistance < targetDistance && result.length < maxTotalPoints) {
     const remainingDistance = targetDistance - generatedDistance;
@@ -216,7 +218,9 @@ export function genTrackPoints(distance, mapChoice = 'default', durationMinutes)
     );
     elapsedMs += (traveled / Math.max(0.5, currentSpeed)) * 1000;
 
-    result.push(`${point[0]}-${point[1]}`);
+    const pointTimestamp = startTimestamp + Math.round(elapsedMs);
+    const pointAccuracy = (5 + Math.random() * 10).toFixed(1);
+    result.push(`${point[0]}-${point[1]}-${pointTimestamp}-${pointAccuracy}`);
     lastPoint = point;
   }
 
