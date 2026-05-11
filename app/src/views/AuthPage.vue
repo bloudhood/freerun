@@ -111,9 +111,17 @@
           >
         </div>
         <div class="pt-2">
+          <div class="flex items-center gap-2 mb-3 text-xs">
+            <span :class="proxyOnline ? 'text-green-500' : 'text-red-500'">
+              <i :class="proxyOnline ? 'ri-checkbox-circle-fill' : 'ri-close-circle-fill'"></i>
+            </span>
+            <span class="theme-text-secondary">
+              {{ proxyOnline ? '代理服务器在线' : '代理服务器离线' }}
+            </span>
+          </div>
           <button
             type="submit"
-            :disabled="loading"
+            :disabled="loading || !proxyOnline"
             class="btn-apple w-full font-heading font-medium text-base rounded-2xl py-3.5 bg-anthropic-orange text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
             <span v-if="!loading">{{ mode === 'login' ? '立即登录' : '重置密码' }}</span>
@@ -150,10 +158,22 @@ const code = ref('');
 const rememberMe = ref(!!rememberLogin.value);
 const loading = ref(false);
 const sending = ref(false);
+const proxyOnline = ref(false);
 const keyboardInset = ref(0);
 const viewportBaseHeight = ref(0);
 let keyboardWasVisible = false;
 let keyboardMeasureTimer = 0;
+
+// 检查代理服务器状态
+async function checkProxyStatus() {
+  try {
+    const resp = await fetch('/devproxy/health');
+    const data = await resp.json();
+    proxyOnline.value = data.status === 'ok';
+  } catch (e) {
+    proxyOnline.value = false;
+  }
+}
 
 function showMessage(message, type = 'info') {
   if (appHeaderRef.value?.show) {
@@ -223,6 +243,9 @@ onMounted(() => {
   }
   syncViewportBaseHeight();
   measureKeyboardInset();
+  checkProxyStatus();
+  // 每30秒检查一次代理状态
+  const proxyCheckTimer = setInterval(checkProxyStatus, 30000);
   window.addEventListener('resize', scheduleKeyboardMeasure);
   window.addEventListener('orientationchange', scheduleKeyboardMeasure);
   window.visualViewport?.addEventListener('resize', scheduleKeyboardMeasure);
