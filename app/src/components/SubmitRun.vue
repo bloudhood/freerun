@@ -1,22 +1,17 @@
 <template>
-  <div class="flex-1 flex flex-col min-h-0 relative w-full">
+  <div class="flex-1 flex flex-col min-h-0">
     
-    <!-- Stats Card -->
+    <!-- Stats -->
     <div class="card p-5 mb-4">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-headline" style="color: var(--text-primary)">完成情况</h3>
-        <span class="text-caption" style="color: var(--text-tertiary)">
-          {{ stats.semesterEndDateText }}
-        </span>
+        <h3 class="t-headline text-primary">完成情况</h3>
+        <span class="t-caption">{{ stats.semesterEndDateText }}</span>
       </div>
-      
       <div class="grid grid-cols-3 gap-3">
-        <div v-for="card in summaryCards" :key="card.label" 
-             class="text-center p-3 rounded-xl"
-             style="background: var(--accent-subtle)">
-          <div class="text-headline" style="color: var(--accent)">{{ card.value }}</div>
-          <div class="text-caption font-medium mt-1" style="color: var(--text-primary)">{{ card.label }}</div>
-          <div class="text-caption mt-0.5" style="color: var(--text-tertiary)">{{ card.detail }}</div>
+        <div v-for="c in summaryCards" :key="c.label" class="text-center p-3 rounded-2xl" style="background: var(--claude-orange-soft)">
+          <div class="t-headline" style="color: var(--claude-orange)">{{ c.value }}</div>
+          <div class="t-label mt-1" style="color: var(--claude-fg)">{{ c.label }}</div>
+          <div class="t-caption mt-0.5" style="font-size: 12px">{{ c.detail }}</div>
         </div>
       </div>
     </div>
@@ -25,20 +20,13 @@
     <form @submit.prevent="onFormSubmit" class="flex-1 flex flex-col min-h-0">
       <div class="card p-5 mb-4">
         
-        <!-- Tabs -->
-        <div class="flex gap-1 p-1 rounded-xl mb-5" style="background: var(--bg-tertiary)">
-          <button
-            v-for="tab in tabs"
-            :key="tab.key"
-            type="button"
-            @click="activeTab = tab.key"
-            class="flex-1 py-2.5 px-4 rounded-lg text-callout font-medium transition-all"
-            :style="{
-              background: activeTab === tab.key ? 'var(--card-bg)' : 'transparent',
-              color: activeTab === tab.key ? 'var(--text-primary)' : 'var(--text-secondary)',
-              boxShadow: activeTab === tab.key ? 'var(--card-shadow)' : 'none'
-            }"
-          >
+        <!-- Segmented Control -->
+        <div class="flex p-1 rounded-xl mb-5" style="background: var(--claude-bg-sunken)">
+          <button v-for="tab in tabs" :key="tab.key" type="button" @click="activeTab = tab.key"
+            class="flex-1 py-2.5 rounded-lg t-callout font-medium transition-all"
+            :style="activeTab === tab.key
+              ? 'background: var(--claude-bg-elevated); color: var(--claude-fg); box-shadow: var(--apple-shadow-sm)'
+              : 'background: transparent; color: var(--claude-fg-tertiary)'">
             {{ tab.label }}
           </button>
         </div>
@@ -46,41 +34,23 @@
         <!-- Submit Tab -->
         <div v-show="activeTab === 'submit'" class="space-y-4">
           
-          <!-- Map Selector -->
+          <!-- Route Selector -->
           <div>
-            <label class="block text-caption font-medium mb-2" style="color: var(--text-secondary)">
-              选择路线
-            </label>
+            <label class="t-label block mb-2">选择路线</label>
             <div class="relative">
-              <button
-                type="button"
-                @click="mapsLoaded && !submitting ? (showRouteOptions = !showRouteOptions) : null"
-                class="input-field flex items-center justify-between w-full"
-                :style="{ opacity: (!mapsLoaded || submitting) ? 0.6 : 1 }"
-              >
-                <span>{{ mapsLoaded ? getRouteName(form.route) : '加载中...' }}</span>
-                <svg class="w-4 h-4 transition-transform" :style="{ transform: showRouteOptions ? 'rotate(180deg)' : 'rotate(0)' }" 
-                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button type="button" @click="mapsLoaded && !submitting ? showRouteOptions = !showRouteOptions : null"
+                class="input flex items-center justify-between w-full text-left" :style="{ opacity: mapsLoaded && !submitting ? 1 : 0.6 }">
+                <span class="t-callout text-primary">{{ mapsLoaded ? getRouteName(form.route) : '加载中...' }}</span>
+                <svg class="w-4 h-4 transition-transform text-tertiary" :style="{ transform: showRouteOptions ? 'rotate(180deg)' : 'rotate(0)' }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="6 9 12 15 18 9"/>
                 </svg>
               </button>
               
-              <!-- Dropdown -->
               <transition name="dropdown">
-                <div v-if="showRouteOptions && mapsLoaded"
-                     class="absolute left-0 right-0 top-full mt-1 card py-1 z-50"
-                     style="max-height: 200px; overflow-y: auto">
-                  <button
-                    v-for="(name, value) in routeOptions"
-                    :key="value"
-                    type="button"
-                    class="w-full px-4 py-2.5 text-left text-callout transition-colors"
-                    :style="{
-                      color: form.route === value ? 'var(--accent)' : 'var(--text-primary)',
-                      background: form.route === value ? 'var(--accent-subtle)' : 'transparent'
-                    }"
-                    @click.stop="selectRoute(value)"
-                  >
+                <div v-if="showRouteOptions && mapsLoaded" class="card-elevated absolute left-0 right-0 top-full mt-2 py-1 z-50 max-h-[200px] overflow-y-auto">
+                  <button v-for="(name, value) in routeOptions" :key="value" type="button" @click.stop="selectRoute(value)"
+                    class="w-full px-4 py-3 text-left t-callout transition-colors"
+                    :style="{ color: form.route === value ? 'var(--claude-orange)' : 'var(--claude-fg)', background: form.route === value ? 'var(--claude-orange-soft)' : 'transparent' }">
                     {{ name }}
                   </button>
                 </div>
@@ -88,57 +58,26 @@
             </div>
           </div>
           
-          <!-- Distance & Duration -->
+          <!-- Distance + Duration -->
           <div>
             <div class="flex items-center justify-between mb-2">
-              <label class="text-caption font-medium" style="color: var(--text-secondary)">
-                跑步数据
-              </label>
-              <span class="text-caption" style="color: var(--text-tertiary)">
-                配速 {{ paceDisplay }}
-              </span>
+              <label class="t-label">跑步数据</label>
+              <span class="t-caption">配速 {{ paceDisplay }}</span>
             </div>
             
             <div class="flex gap-2">
               <div class="flex-1 relative">
-                <input
-                  v-model.number="form.distance"
-                  type="number"
-                  step="1"
-                  placeholder="距离"
-                  required
-                  class="input-field pr-10"
-                />
-                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-caption" style="color: var(--text-tertiary)">
-                  米
-                </span>
+                <input v-model.number="form.distance" type="number" step="1" placeholder="距离" required class="input pr-12" />
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 t-caption text-tertiary">米</span>
               </div>
-              
               <div class="flex-1 relative">
-                <input
-                  v-model.number="form.duration"
-                  type="number"
-                  placeholder="时间"
-                  class="input-field pr-10"
-                  :class="{ 'opacity-50': !userTyping }"
-                  @focus="userTyping = true"
-                  @blur="onDurationBlur"
-                />
-                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-caption" style="color: var(--text-tertiary)">
-                  分
-                </span>
+                <input v-model.number="form.duration" type="number" placeholder="时间"
+                  class="input pr-12" :class="{ 'opacity-50': !userTyping }" @focus="userTyping = true" @blur="onDurationBlur" />
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 t-caption text-tertiary">分</span>
               </div>
-              
-              <button
-                type="button"
-                @click="onRandomFill"
-                :disabled="submitting || randomizing"
-                class="btn btn-ghost px-4"
-                style="background: var(--btn-secondary-bg)"
-              >
+              <button type="button" @click="onRandomFill" :disabled="submitting || randomizing" class="btn btn-ghost shrink-0 px-3" style="border-radius: 14px; background: var(--claude-bg-sunken)">
                 <svg v-if="!randomizing" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                  <circle cx="12" cy="12" r="1"/>
+                  <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
                 </svg>
                 <div v-else class="spinner"></div>
               </button>
@@ -146,34 +85,12 @@
           </div>
           
           <!-- Submit Button -->
-          <div class="pt-2">
+          <div class="pt-1">
             <transition name="fade" mode="out-in">
-              <button
-                v-if="!awaitingSubmitConfirm"
-                key="submit"
-                type="submit"
-                class="btn btn-primary w-full"
-                :disabled="submitting || !isFormValid"
-              >
-                提交记录
-              </button>
-              
-              <div v-else key="confirm" class="flex gap-3">
-                <button
-                  type="button"
-                  class="btn btn-ghost flex-1"
-                  style="background: var(--btn-secondary-bg)"
-                  :disabled="submitting"
-                  @click="cancelSubmitConfirm"
-                >
-                  取消
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-accent flex-1"
-                  :disabled="submitting || !isFormValid"
-                  @click="confirmSubmit"
-                >
+              <button v-if="!awaitingSubmitConfirm" key="submit" type="submit" class="btn btn-accent w-full" :disabled="submitting || !isFormValid">提交记录</button>
+              <div v-else key="confirm" class="flex gap-2">
+                <button type="button" class="btn btn-ghost flex-1" style="background: var(--claude-bg-sunken)" :disabled="submitting" @click="cancelSubmitConfirm">取消</button>
+                <button type="button" class="btn btn-accent flex-1" :disabled="submitting || !isFormValid" @click="confirmSubmit">
                   <div v-if="submitting" class="spinner"></div>
                   <span v-else>确认提交</span>
                 </button>
@@ -185,24 +102,16 @@
         
         <!-- Schedule Tab -->
         <div v-show="activeTab === 'schedule'">
-          <div v-if="schedulePanelMounted">
-            <AutoConfig inline @saved="onAutoConfigSaved" />
-          </div>
+          <div v-if="schedulePanelMounted"><AutoConfig inline @saved="onAutoConfigSaved" /></div>
         </div>
         
       </div>
     </form>
     
-    <!-- Map Preview -->
+    <!-- Map -->
     <div v-show="activeTab === 'submit'" class="card p-5">
-      <h3 class="text-callout font-medium mb-3" style="color: var(--text-secondary)">路线预览</h3>
-      <MapPreview
-        v-if="mapRenderUnlocked"
-        :track="generatedTrack"
-        :ready="mapReady"
-        :map-style="isDark ? 'dark' : 'light'"
-        class="w-full"
-      />
+      <h3 class="t-label mb-3">路线预览</h3>
+      <MapPreview v-if="mapRenderUnlocked" :track="generatedTrack" :ready="mapReady" :map-style="isDark ? 'dark' : 'light'" class="w-full" />
     </div>
     
   </div>
@@ -214,346 +123,122 @@ import { submitRun as submitRunApi, useRouteGenerator } from '@/composables/useR
 import { useDataStore } from '@/composables/useDataStore';
 import { useThemeStore } from '@/composables/useTheme';
 import { waitForAutorunPingReady } from '@/sdk/autorun';
-import {
-  calculatePaceMinutesPerKm,
-  computeDurationFromDistance,
-  formatPaceMinutesPerKm,
-  normalizeRoundedRunTime,
-  randomIntNonThousand,
-  resolveRunBoundsFromStandard,
-  isPaceWithinLimits,
-} from '@/utils/run';
+import { computeDurationFromDistance, formatPaceMinutesPerKm, normalizeRoundedRunTime, randomIntNonThousand, resolveRunBoundsFromStandard, isPaceWithinLimits } from '@/utils/run';
 
 const MapPreview = defineAsyncComponent(() => import('./MapPreview.vue'));
 const AutoConfig = defineAsyncComponent(() => import('./AutoConfig.vue'));
-
 const showMessage = inject('showMessage');
-
-const { userInfo, runStandard, runInfo, activityInfo, submitRunDistance, submitRunRoute } =
-  useDataStore();
-
+const { userInfo, runStandard, runInfo, activityInfo, submitRunDistance, submitRunRoute } = useDataStore();
 const emit = defineEmits(['submitted']);
 
-const tabs = [
-  { key: 'submit', label: '手动提交' },
-  { key: 'schedule', label: '自动提交' },
-];
-
+const tabs = [{ key: 'submit', label: '手动提交' }, { key: 'schedule', label: '自动提交' }];
 const activeTab = ref('submit');
 const schedulePanelMounted = ref(false);
+watch(activeTab, tab => { if (tab === 'schedule') schedulePanelMounted.value = true; }, { immediate: true });
 
-watch(activeTab, (tab) => {
-  if (tab === 'schedule') schedulePanelMounted.value = true;
-}, { immediate: true });
-
-// Form state
-const form = ref({
-  distance: submitRunDistance.value,
-  route: submitRunRoute.value,
-  duration: 0,
-});
-
+const form = ref({ distance: submitRunDistance.value, route: submitRunRoute.value, duration: 0 });
 const mapRenderUnlocked = ref(false);
 const submitting = ref(false);
 const randomizing = ref(false);
 const awaitingSubmitConfirm = ref(false);
 const showRouteOptions = ref(false);
-
 const themeStore = useThemeStore();
 const isDark = computed(() => themeStore.isDark);
 
-const distanceBounds = computed(() =>
-  resolveRunBoundsFromStandard(userInfo.value || {}, runStandard.value || {})
-);
-
-const isDistanceValid = computed(() => {
-  const distance = Number(form.value.distance);
-  return Number.isInteger(distance) && distance > 0;
-});
-
-const isPaceValid = computed(() => {
-  const distance = Number(form.value.distance);
-  const time = userDuration.value || Math.floor(predictedRunTime.value);
-  if (!distance || !time) return false;
-  return isPaceWithinLimits(distance, time);
-});
-
+const distanceBounds = computed(() => resolveRunBoundsFromStandard(userInfo.value || {}, runStandard.value || {}));
+const isDistanceValid = computed(() => { const d = Number(form.value.distance); return Number.isInteger(d) && d > 0; });
+const isPaceValid = computed(() => { const d = Number(form.value.distance); const t = userDuration.value || Math.floor(predictedRunTime.value); return !d || !t ? false : isPaceWithinLimits(d, t); });
 const isFormValid = computed(() => isDistanceValid.value && isPaceValid.value);
 
-const distanceErrorText = computed(() => {
-  if (!isDistanceValid.value) return '跑步里程需为大于 0 的整数';
-  if (!isPaceValid.value) return '配速不合理，请控制在 4.0 - 10.0 km/h 之间';
-  return '';
-});
-
 const predictedRunTime = ref(0);
-
 const calculatePredictedRunTime = (distance) => {
   if (!Number.isInteger(distance) || distance <= 0) return 0;
-  const rawDuration = computeDurationFromDistance(distance, {
-    minMinutes: distanceBounds.value.timeMin,
-    maxMinutes: distanceBounds.value.timeMax,
-  });
-  return normalizeRoundedRunTime(rawDuration, distance, {
-    minMinutes: distanceBounds.value.timeMin,
-    maxMinutes: distanceBounds.value.timeMax,
-  });
+  return normalizeRoundedRunTime(computeDurationFromDistance(distance, { minMinutes: distanceBounds.value.timeMin, maxMinutes: distanceBounds.value.timeMax }), distance, { minMinutes: distanceBounds.value.timeMin, maxMinutes: distanceBounds.value.timeMax });
 };
-
 const userTyping = ref(false);
+watch(() => Number(form.value.distance), distance => { if (!userTyping.value) { const t = calculatePredictedRunTime(distance); predictedRunTime.value = t; form.value.duration = Math.floor(t); } }, { immediate: true });
+watch(() => form.value.duration, duration => { if (!userTyping.value) return; if (duration > 0) predictedRunTime.value = 0; });
 
-watch(() => Number(form.value.distance), (distance) => {
-  if (!userTyping.value) {
-    const time = calculatePredictedRunTime(distance);
-    predictedRunTime.value = time;
-    form.value.duration = Math.floor(time);
-  }
-}, { immediate: true });
-
-watch(() => form.value.duration, (duration) => {
-  if (!userTyping.value) return;
-  if (duration > 0) predictedRunTime.value = 0;
-});
-
-const userDuration = computed(() => {
-  const d = Number(form.value.duration);
-  return Number.isInteger(d) && d > 0 ? d : 0;
-});
-
-const paceDisplay = computed(() => {
-  const distance = Number(form.value.distance);
-  const time = userDuration.value || Math.floor(predictedRunTime.value);
-  if (!Number.isInteger(distance) || distance <= 0 || !time) return "0'00''/km";
-  return formatPaceMinutesPerKm(distance, time);
-});
+const userDuration = computed(() => { const d = Number(form.value.duration); return Number.isInteger(d) && d > 0 ? d : 0; });
+const paceDisplay = computed(() => { const d = Number(form.value.distance); const t = userDuration.value || Math.floor(predictedRunTime.value); return !Number.isInteger(d) || d <= 0 || !t ? "0'00''/km" : formatPaceMinutesPerKm(d, t); });
 
 const buildLocalRandomRun = () => {
   const bounds = distanceBounds.value;
   const runDistance = randomIntNonThousand(bounds.distanceMin, bounds.distanceMax);
-  const duration = computeDurationFromDistance(runDistance, {
-    minMinutes: bounds.timeMin,
-    maxMinutes: bounds.timeMax,
-  });
-  const runTime = normalizeRoundedRunTime(duration, runDistance, {
-    minMinutes: bounds.timeMin,
-    maxMinutes: bounds.timeMax,
-  });
-  const route = String(form.value.route || selectedRoute.value || 'default').trim() || 'default';
-
-  return {
-    map_id: route,
-    run_distance: runDistance,
-    run_time: runTime,
-    track_points: '',
-  };
+  const runTime = normalizeRoundedRunTime(computeDurationFromDistance(runDistance, { minMinutes: bounds.timeMin, maxMinutes: bounds.timeMax }), runDistance, { minMinutes: bounds.timeMin, maxMinutes: bounds.timeMax });
+  return { map_id: String(form.value.route || selectedRoute.value || 'default').trim() || 'default', run_distance: runDistance, run_time: runTime, track_points: '' };
 };
 
-const applyRandomRun = (randomRun) => {
-  if (!randomRun) return;
-  const mapId = String(randomRun.map_id || '').trim();
-  if (mapId && Object.prototype.hasOwnProperty.call(routeOptions.value, mapId)) {
-    selectMapRoute(mapId);
-    form.value.route = mapId;
-  }
-  form.value.distance = randomRun.run_distance;
-};
+const applyRandomRun = (rr) => { if (!rr) return; const id = String(rr.map_id || '').trim(); if (id && Object.prototype.hasOwnProperty.call(routeOptions.value, id)) { selectMapRoute(id); form.value.route = id; } form.value.distance = rr.run_distance; };
 
-function onDurationBlur() {
-  userTyping.value = false;
-  if (!form.value.duration || form.value.duration <= 0) {
-    const time = calculatePredictedRunTime(form.value.distance);
-    predictedRunTime.value = time;
-    form.value.duration = Math.floor(time);
-  }
-}
+function onDurationBlur() { userTyping.value = false; if (!form.value.duration || form.value.duration <= 0) { const t = calculatePredictedRunTime(form.value.distance); predictedRunTime.value = t; form.value.duration = Math.floor(t); } }
 
 async function onRandomFill() {
   if (submitting.value || randomizing.value) return;
-  randomizing.value = true;
-  userTyping.value = false;
-  try {
-    const randomRun = buildLocalRandomRun();
-    applyRandomRun(randomRun);
-    predictedRunTime.value = randomRun.run_time || calculatePredictedRunTime(Number(form.value.distance));
-    form.value.duration = Math.floor(predictedRunTime.value);
-  } finally {
-    randomizing.value = false;
-    awaitingSubmitConfirm.value = false;
-  }
+  randomizing.value = true; userTyping.value = false;
+  try { const rr = buildLocalRandomRun(); applyRandomRun(rr); predictedRunTime.value = rr.run_time || calculatePredictedRunTime(Number(form.value.distance)); form.value.duration = Math.floor(predictedRunTime.value); }
+  finally { randomizing.value = false; awaitingSubmitConfirm.value = false; }
 }
 
-watch(() => [form.value.distance, form.value.route], ([distance, route]) => {
-  submitRunDistance.value = distance;
-  submitRunRoute.value = route;
-  awaitingSubmitConfirm.value = false;
-});
+watch(() => [form.value.distance, form.value.route], ([d, r]) => { submitRunDistance.value = d; submitRunRoute.value = r; awaitingSubmitConfirm.value = false; });
 
-const {
-  mapsLoaded,
-  routeOptions,
-  selectedRoute,
-  load: loadMaps,
-  selectRoute: selectMapRoute,
-  getRouteName,
-  generatedTrack,
-  mapReady,
-} = useRouteGenerator(
-  computed(() => form.value.distance),
-  computed(() => form.value.route)
-);
+const { mapsLoaded, routeOptions, selectedRoute, load: loadMaps, selectRoute: selectMapRoute, getRouteName, generatedTrack, mapReady } = useRouteGenerator(computed(() => form.value.distance), computed(() => form.value.route));
 
-// Stats
 const stats = computed(() => {
-  const activity = activityInfo.value || {};
-  const run = runInfo.value || {};
-  const standard = runStandard.value || {};
-  const user = userInfo.value || {};
-
-  const completedActivities = Number(activity.joinNum || 0);
-  const totalActivities = Number(activity.totalNum || 0);
-  const clubCompletionRate = totalActivities > 0 ? (completedActivities / totalActivities) * 100 : 0;
-  const clubCompletionRateText = totalActivities === 0 ? '0%' : `${Math.round(clubCompletionRate)}%`;
-
-  const totalRequiredRuns = user.gender === '1'
-    ? Number(standard.boyAllRunTime || 0)
-    : user.gender === '2'
-      ? Number(standard.girlAllRunTime || 0)
-      : 0;
-  const completedRuns = Number(run.runValidCount || 0);
-  const runCompletionRate = totalRequiredRuns
-    ? Math.min(100, Math.round((completedRuns / totalRequiredRuns) * 100))
-    : 0;
-
-  const totalDistanceMeters = Number(run.runValidDistance || 0);
-  const totalDistanceKm = (Math.floor((totalDistanceMeters / 1000) * 10) / 10).toFixed(1);
-  const targetDistanceKm = user.gender === '1'
-    ? (Number(standard.boyAllRunDistance || 0) / 1000).toFixed(1)
-    : user.gender === '2'
-      ? (Number(standard.girlAllRunDistance || 0) / 1000).toFixed(1)
-      : '0.0';
-  const targetDistanceNumber = Number(targetDistanceKm);
-  const currentDistanceNumber = Number(totalDistanceKm);
-  const distancePercentage = targetDistanceNumber
-    ? Math.min(100, (currentDistanceNumber / targetDistanceNumber) * 100)
-    : 0;
-
-  const semYear = String(standard.semesterYear || '');
-  const semesterFlag = semYear.slice(-1);
-  const semesterEndDateText = semesterFlag === '1'
-    ? standard.firstSemesterDateEnd || ''
-    : semesterFlag === '2'
-      ? standard.secondSemesterDateEnd || ''
-      : '';
-
-  return {
-    semesterEndDateText,
-    summaryCards: [
-      { label: '俱乐部', value: clubCompletionRateText, detail: `${completedActivities}/${totalActivities}` },
-      { label: '跑步次数', value: `${runCompletionRate}%`, detail: `${completedRuns}/${totalRequiredRuns}` },
-      { label: '跑步里程', value: `${Math.round(distancePercentage)}%`, detail: `${totalDistanceKm}/${targetDistanceNumber > 0 ? targetDistanceKm : '0'}` },
-    ],
-  };
+  const a = activityInfo.value || {}, r = runInfo.value || {}, s = runStandard.value || {}, u = userInfo.value || {};
+  const ca = Number(a.joinNum || 0), ta = Number(a.totalNum || 0);
+  const required = u.gender === '1' ? Number(s.boyAllRunTime || 0) : u.gender === '2' ? Number(s.girlAllRunTime || 0) : 0;
+  const completed = Number(r.runValidCount || 0);
+  const dist = Number(r.runValidDistance || 0);
+  const targetDist = u.gender === '1' ? Number(s.boyAllRunDistance || 0) : u.gender === '2' ? Number(s.girlAllRunDistance || 0) : 0;
+  const sem = String(s.semesterYear || '').slice(-1);
+  return { semesterEndDateText: sem === '1' ? s.firstSemesterDateEnd || '' : sem === '2' ? s.secondSemesterDateEnd || '' : '' };
+});
+const summaryCards = computed(() => {
+  const a = activityInfo.value || {}, r = runInfo.value || {}, s = runStandard.value || {}, u = userInfo.value || {};
+  const ca = Number(a.joinNum || 0), ta = Number(a.totalNum || 0);
+  const required = u.gender === '1' ? Number(s.boyAllRunTime || 0) : u.gender === '2' ? Number(s.girlAllRunTime || 0) : 0;
+  const completed = Number(r.runValidCount || 0);
+  const dist = Number(r.runValidDistance || 0);
+  const targetDist = u.gender === '1' ? Number(s.boyAllRunDistance || 0) : u.gender === '2' ? Number(s.girlAllRunDistance || 0) : 0;
+  return [
+    { label: '俱乐部', value: ta ? `${Math.round(ca/ta*100)}%` : '0%', detail: `${ca}/${ta}` },
+    { label: '跑步次数', value: `${required ? Math.min(100, Math.round(completed/required*100)) : 0}%`, detail: `${completed}/${required}` },
+    { label: '跑步里程', value: `${targetDist ? Math.min(100, Math.round(dist/targetDist*100)) : 0}%`, detail: `${(Math.floor(dist/1000*10)/10).toFixed(1)}/${(targetDist/1000).toFixed(1)}` },
+  ];
 });
 
-const summaryCards = computed(() => stats.value.summaryCards);
-
-function selectRoute(route) {
-  if (!Object.prototype.hasOwnProperty.call(routeOptions.value, route)) return;
-  selectMapRoute(route);
-  form.value.route = route;
-  submitRunRoute.value = route;
-  showRouteOptions.value = false;
-}
+function selectRoute(route) { if (!Object.prototype.hasOwnProperty.call(routeOptions.value, route)) return; selectMapRoute(route); form.value.route = route; submitRunRoute.value = route; showRouteOptions.value = false; }
 
 const handleSubmit = async () => {
   submitting.value = true;
   try {
-    const runTime = userDuration.value || Math.floor(predictedRunTime.value);
-    const res = await submitRunApi({
-      distance: form.value.distance,
-      route: form.value.route,
-      runTime,
-    });
-    
-    if (!res.ok) {
-      let msg = res.data?.msg || res.error?.message || '提交失败';
-      if (res.msg === 'not_login') msg = '请先登录';
-      else if (res.msg === 'distance_invalid') msg = '跑步里程需为大于 0 的整数';
-      else if (res.msg === 'track_invalid') msg = '轨迹生成失败，请重新随机';
-      showMessage(msg, 'error');
-      return;
-    }
-
+    const res = await submitRunApi({ distance: form.value.distance, route: form.value.route, runTime: userDuration.value || Math.floor(predictedRunTime.value) });
+    if (!res.ok) { showMessage(res.data?.msg || res.error?.message || '提交失败', 'error'); return; }
     showMessage(res.data?.response?.resultDesc || '提交成功', 'success');
     emit('submitted');
-  } finally {
-    submitting.value = false;
-    awaitingSubmitConfirm.value = false;
-  }
+  } finally { submitting.value = false; awaitingSubmitConfirm.value = false; }
 };
 
-const requestSubmitConfirm = () => {
-  if (!isFormValid.value) {
-    showMessage(distanceErrorText.value, 'error');
-    return;
-  }
-  awaitingSubmitConfirm.value = true;
-};
-
+const requestSubmitConfirm = () => { if (!isFormValid.value) { showMessage('数据不合法', 'error'); return; } awaitingSubmitConfirm.value = true; };
 const cancelSubmitConfirm = () => { awaitingSubmitConfirm.value = false; };
-const confirmSubmit = () => {
-  if (!awaitingSubmitConfirm.value || submitting.value) return;
-  handleSubmit();
-};
-
-const onFormSubmit = () => {
-  if (activeTab.value !== 'submit' || submitting.value) return;
-  requestSubmitConfirm();
-};
-
+const confirmSubmit = () => { if (!awaitingSubmitConfirm.value || submitting.value) return; handleSubmit(); };
+const onFormSubmit = () => { if (activeTab.value !== 'submit' || submitting.value) return; requestSubmitConfirm(); };
 const onAutoConfigSaved = () => showMessage('保存成功', 'success');
 
-const unlockMapRender = async () => {
-  await waitForAutorunPingReady();
-  mapRenderUnlocked.value = true;
-};
-
 onMounted(() => { unlockMapRender(); });
+const unlockMapRender = async () => { await waitForAutorunPingReady(); mapRenderUnlocked.value = true; };
 
 loadMaps().then(async () => {
-  if (submitRunRoute.value) {
-    form.value.route = submitRunRoute.value;
-  } else if (selectedRoute.value) {
-    form.value.route = selectedRoute.value;
-  }
-  const cachedDistance = Number(submitRunDistance.value);
-  if (Number.isInteger(cachedDistance) && cachedDistance > 0) {
-    form.value.distance = cachedDistance;
-  } else {
-    await onRandomFill();
-  }
+  if (submitRunRoute.value) form.value.route = submitRunRoute.value; else if (selectedRoute.value) form.value.route = selectedRoute.value;
+  const cached = Number(submitRunDistance.value);
+  if (Number.isInteger(cached) && cached > 0) form.value.distance = cached; else await onRandomFill();
 });
 </script>
 
 <style scoped>
-.dropdown-enter-active,
-.dropdown-leave-active {
-  transition: all 0.2s var(--ease-default);
-}
-
-.dropdown-enter-from,
-.dropdown-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.15s var(--ease-default);
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+.dropdown-enter-active, .dropdown-leave-active { transition: all 0.2s var(--ease-out); }
+.dropdown-enter-from, .dropdown-leave-to { opacity: 0; transform: translateY(-4px); }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.15s var(--ease-out); }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
