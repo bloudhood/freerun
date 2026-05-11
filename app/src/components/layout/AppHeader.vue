@@ -60,17 +60,6 @@
               </div>
 
               <div class="flex items-center ml-auto mr-3 shrink-0 gap-3 pointer-events-auto">
-                <a
-                  v-if="props.showGithub"
-                  :href="githubUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="inline-flex items-center justify-center h-6 w-6 transition-colors rounded-md header-action-btn"
-                  aria-label="GitHub"
-                  title="GitHub"
-                >
-                  <i class="ri-github-line text-[19px]"></i>
-                </a>
                 <button
                   type="button"
                   class="inline-flex items-center justify-center h-6 w-6 transition-colors rounded-md header-action-btn"
@@ -96,11 +85,8 @@
 <script setup>
 import { ref, computed, getCurrentInstance, watch, onUnmounted } from 'vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
-import { urls } from '@/sdk/app';
 import { useDataStore } from '@/composables/useDataStore';
 import { useThemeStore } from '@/composables/useTheme';
-
-const githubUrl = urls.github || 'https://github.com/yanyaoli/byerun-web';
 
 const props = defineProps({
   scrolled: { type: Boolean, default: false },

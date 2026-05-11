@@ -14,10 +14,6 @@ export const appConfig = {
   },
 };
 
-export const urls = {
-  github: 'https://github.com/yanyaoli/byerun-web',
-};
-
 function handleAuthFailure() {
   clearAuthSessionStorage();
 
