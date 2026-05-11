@@ -1,34 +1,46 @@
 <template>
-  <div class="w-full max-w-3xl mx-auto py-4 px-2 space-y-5">
-    <section class="corner-apple-inner glass-apple animate-fade-in">
-      <div class="flex items-center justify-between gap-4">
+  <div class="w-full max-w-md mx-auto py-4 space-y-4">
+    
+    <!-- Profile Card -->
+    <div class="card p-5 animate-fade-in">
+      <div class="flex items-center justify-between">
         <div class="flex items-center gap-4 min-w-0">
-          <div
-            class="h-14 w-14 rounded-2xl bg-anthropic-orange/10 dark:bg-anthropic-orange/20 text-anthropic-orange flex items-center justify-center shadow-inner"
-          >
-            <i class="ri-user-3-line text-2xl"></i>
+          <!-- Avatar -->
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center"
+               style="background: linear-gradient(135deg, var(--accent) 0%, #ff8f65 100%); box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3)">
+            <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
           </div>
+          
+          <!-- Info -->
           <div class="min-w-0">
-            <p class="text-xl font-heading font-medium text-anthropic-dark dark:text-anthropic-light truncate">{{ displayName }}</p>
-            <p class="text-sm font-body text-anthropic-mid-gray truncate mt-0.5">{{ registerCode }}</p>
+            <p class="text-headline truncate" style="color: var(--text-primary)">{{ displayName }}</p>
+            <p class="text-caption mt-0.5 truncate" style="color: var(--text-secondary)">{{ registerCode }}</p>
           </div>
         </div>
+        
+        <!-- Logout -->
         <button
           type="button"
           @click="handleLogout"
-          class="btn-apple shrink-0 text-sm cursor-pointer inline-flex items-center gap-2 bg-red-500/10 text-red-600 dark:text-red-400 px-6 py-2.5 rounded-xl font-heading"
+          class="btn btn-ghost px-4 py-2 text-caption font-medium"
+          style="color: var(--destructive); background: var(--destructive-muted)"
         >
-          <span>登出</span>
+          登出
         </button>
       </div>
-    </section>
-
+    </div>
+    
+    <!-- Sponsor Card -->
     <SponsorCard
       v-if="sponsorCardVisible"
       :sponsor="sponsor"
       :domain="domain"
       :community="community"
     />
+    
   </div>
 </template>
 
@@ -48,9 +60,7 @@ const community = computed(() => pingMeta.value?.community ?? null);
 const sponsorCardVisible = computed(() => Boolean(sponsor.value && domain.value));
 
 const handleLogout = () => {
-  try {
-    clearAllData();
-  } catch (e) {}
+  try { clearAllData(); } catch (e) {}
   window.location.reload();
 };
 </script>
