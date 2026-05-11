@@ -1,25 +1,68 @@
-<template>
-  <nav class="fixed left-0 right-0 bottom-4 z-[999] px-4" :style="{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }">
-    <div class="card-glass max-w-[380px] mx-auto px-1.5 py-2" style="border-radius: var(--radius-lg)">
-      <div class="flex items-center justify-around">
-        <button v-for="item in tabs" :key="item.key" type="button" @click="handleClick(item)"
-          class="flex flex-col items-center justify-center py-1.5 px-5 rounded-xl transition-all duration-200"
-          :style="{ background: active === item.key ? 'var(--accent-soft)' : 'transparent', color: active === item.key ? 'var(--accent)' : 'var(--fg-tertiary)' }">
-          <svg class="w-6 h-6 mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <template v-if="item.key === 'club'"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></template>
-            <template v-if="item.key === 'records'"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></template>
-            <template v-if="item.key === 'submit'"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></template>
-            <template v-if="item.key === 'my'"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></template>
-          </svg>
-          <span class="t-label" style="font-size: 10px; font-weight: 500; letter-spacing: 0.02em">{{ item.label }}</span>
-        </button>
-      </div>
+﻿<template>
+  <nav
+    class="fixed left-0 right-0 bottom-4 z-[999] transition-all duration-300"
+    :style="{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }"
+  >
+    <div
+      :class="[
+        'flex items-center h-full backdrop-blur-2xl border rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] relative max-w-[600px] mx-auto w-[calc(100%_-_24px)] px-5 py-3 gap-2',
+        'theme-card-strong',
+      ]"
+    >
+      <button
+        v-for="item in tabs"
+        :key="item.key"
+        type="button"
+        :class="[
+          'relative flex flex-col items-center justify-center cursor-pointer rounded-full transition-all duration-300 outline-none flex-1 h-12',
+          active === item.key ? 'bottom-tab-active' : 'bottom-tab-inactive',
+        ]"
+        @click="handleClick(item)"
+      >
+        <div class="relative flex items-center justify-center w-6 h-6 z-10">
+          <i :class="item.icon" class="text-[19px]"></i>
+        </div>
+        <div class="text-[10px] mt-0.5 text-center z-10">{{ item.label }}</div>
+      </button>
     </div>
   </nav>
 </template>
 
 <script setup>
 const emit = defineEmits(['update:active', 'switch']);
-defineProps({ active: { type: String, default: 'submit' }, isDarkMode: { type: Boolean, default: false }, tabs: { type: Array, default: () => [{ key: 'club', label: '俱乐部' }, { key: 'records', label: '记录' }, { key: 'submit', label: '提交' }, { key: 'my', label: '我的' }] } });
-function handleClick(item) { emit('update:active', item.key); emit('switch', item.key); }
+
+defineProps({
+  active: { type: String, default: 'submit' },
+  isDarkMode: { type: Boolean, default: false },
+  tabs: {
+    type: Array,
+    default: () => [
+      { key: 'club', label: '俱乐部', icon: 'ri-basketball-line' },
+      { key: 'records', label: '记录', icon: 'ri-task-line' },
+      { key: 'submit', label: '管理', icon: 'ri-command-line' },
+      { key: 'my', label: '我的', icon: 'ri-user-smile-line' },
+    ],
+  },
+});
+
+function handleClick(item) {
+  emit('update:active', item.key);
+  emit('switch', item.key);
+}
 </script>
+
+<style scoped>
+.bottom-tab-active {
+  color: var(--text-primary);
+  background-color: var(--tab-action-bg);
+}
+
+.bottom-tab-inactive {
+  color: var(--text-secondary);
+}
+
+.bottom-tab-inactive:hover {
+  color: var(--text-primary);
+  background-color: var(--action-hover-bg);
+}
+</style>

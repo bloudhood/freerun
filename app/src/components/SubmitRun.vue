@@ -1,96 +1,198 @@
 <template>
-  <div class="flex-1 flex flex-col min-h-0">
-    
-    <!-- Stats -->
-    <div class="card px-5 py-5 mb-4">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="t-headline text-primary">完成情况</h3>
-        <span class="t-caption" v-if="stats.semesterEndDateText" style="color: var(--fg-tertiary)">{{ stats.semesterEndDateText }}</span>
+  <div class="flex-1 flex flex-col min-h-0 relative w-full box-border">
+    <!-- 完成情况卡片 -->
+    <div class="theme-card rounded-2xl p-5 mb-5 w-full box-border">
+      <div class="flex justify-between items-center border-b border-dashed theme-card-divider pb-2">
+        <div class="text-sm font-semibold theme-text-primary">完成情况</div>
+        <div class="text-sm theme-text-secondary">
+          <i class="ri-hourglass-fill"></i> {{ stats.semesterEndDateText }}
+        </div>
       </div>
-      <div class="grid grid-cols-3 gap-2.5">
-        <div v-for="c in summaryCards" :key="c.label" class="text-center py-3 px-2 rounded-2xl" style="background: var(--accent-soft)">
-          <div class="t-headline" style="color: var(--accent); line-height: 1.1">{{ c.value }}</div>
-          <div class="t-label mt-1.5" style="color: var(--fg); letter-spacing: 0.03em; font-size: 11px">{{ c.label }}</div>
-          <div class="t-caption mt-0.5" style="font-size: 12px; color: var(--fg-tertiary)">{{ c.detail }}</div>
+      <div class="flex gap-2 pt-2 w-full">
+        <div
+          v-for="card in summaryCards"
+          :key="card.label"
+          class="flex-1 theme-card-soft rounded-xl p-3 flex flex-col items-center"
+        >
+          <div class="text-lg theme-text-secondary mb-1">
+            {{ card.value }}
+          </div>
+          <div class="text-sm font-semibold theme-text-primary mb-1 truncate">{{ card.label }}</div>
+          <div class="text-sm theme-text-secondary mb-2">
+            {{ card.detail }}
+          </div>
         </div>
       </div>
     </div>
-    
-    <form @submit.prevent="onFormSubmit" class="flex-1 flex flex-col min-h-0">
-      <div class="card px-5 py-5 mb-4">
-        
-        <!-- Segmented Control -->
-        <div class="segmented mb-5">
-          <button v-for="tab in tabs" :key="tab.key" type="button" @click="activeTab = tab.key"
-            class="segmented-btn" :class="{ active: activeTab === tab.key }">{{ tab.label }}</button>
+
+    <!-- 提交表单 -->
+    <form @submit.prevent="onFormSubmit" class="flex-1 flex flex-col min-h-0 overflow-visible">
+      <div class="theme-card rounded-2xl w-full box-border mb-5 p-5 form-card-container">
+        <!-- Tab 按钮行 -->
+        <div class="flex items-center mb-4 border-b border-dashed theme-card-divider pb-2">
+          <button
+            v-for="tab in tabs"
+            :key="tab.key"
+            type="button"
+            @click="activeTab = tab.key"
+            :class="[
+              'flex-1 text-base h-8 font-semibold transition-all text-center rounded-full',
+              activeTab === tab.key
+                ? 'theme-text-primary theme-card-soft'
+                : 'submit-tab-inactive border-none',
+            ]"
+          >
+            <i :class="tab.icon" class="mr-2"></i>{{ tab.label }}
+          </button>
         </div>
-        
-        <div v-show="activeTab === 'submit'" class="space-y-4">
-          
-          <!-- Route -->
-          <div>
-            <label class="t-label block mb-2">选择路线</label>
-            <div class="relative">
-              <button type="button" @click="mapsLoaded && !submitting ? showRouteOptions = !showRouteOptions : null"
-                class="input flex items-center justify-between w-full text-left pr-3" :style="{ opacity: mapsLoaded && !submitting ? 1 : 0.5, cursor: mapsLoaded && !submitting ? 'pointer' : 'default' }">
-                <span class="t-callout text-primary">{{ mapsLoaded ? getRouteName(form.route) : '加载中...' }}</span>
-                <svg class="w-4 h-4 transition-transform text-tertiary shrink-0" :style="{ transform: showRouteOptions ? 'rotate(180deg)' : 'rotate(0)' }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-              <transition name="drop">
-                <div v-if="showRouteOptions && mapsLoaded" class="card-elevated absolute left-0 right-0 top-full mt-2 py-1 z-50 max-h-[200px] overflow-y-auto" style="border-radius: var(--radius-input)">
-                  <button v-for="(name, value) in routeOptions" :key="value" type="button" @click.stop="selectRoute(value)"
-                    class="w-full px-4 py-2.5 text-left t-callout transition-colors" :style="{ color: form.route === value ? 'var(--accent)' : 'var(--fg)', background: form.route === value ? 'var(--accent-soft)' : 'transparent' }">{{ name }}</button>
+
+        <div>
+          <!-- 提交记录表单 -->
+          <div v-show="activeTab === 'submit'">
+            <div class="form-group mb-4">
+              <label class="block text-sm theme-text-secondary mb-2 font-medium">选择地图</label>
+              <div
+                class="route-dropdown theme-card-soft rounded-md p-2 cursor-pointer relative w-full box-border"
+                @click="mapsLoaded && !submitting ? (showRouteOptions = !showRouteOptions) : null"
+              >
+                <div
+                  class="selected-route flex items-center justify-between text-sm theme-text-secondary"
+                  :class="{ disabled: !mapsLoaded || submitting }"
+                >
+                  <span v-if="!mapsLoaded">加载地图中...</span>
+                  <span v-else>{{ getRouteName(form.route) }}</span>
+                  <div
+                    class="dropdown-arrow"
+                    :class="{ active: showRouteOptions && mapsLoaded }"
+                    v-if="mapsLoaded"
+                  ></div>
                 </div>
-              </transition>
-            </div>
-          </div>
-          
-          <!-- Distance + Duration -->
-          <div>
-            <div class="flex items-center justify-between mb-2">
-              <label class="t-label">跑步数据</label>
-              <span class="t-caption text-tertiary">配速 {{ paceDisplay }}</span>
-            </div>
-            <div class="flex gap-2">
-              <div class="flex-1 relative">
-                <input v-model.number="form.distance" type="number" step="1" placeholder="距离" required class="input pr-14" />
-                <span class="absolute right-4 top-1/2 -translate-y-1/2 t-caption text-tertiary select-none">米</span>
+                <transition name="dropdown">
+                  <div
+                    v-show="showRouteOptions && mapsLoaded"
+                    class="route-options theme-card-strong"
+                  >
+                    <div
+                      v-for="(name, value) in routeOptions"
+                      :key="value"
+                      class="route-option text-sm theme-text-secondary cursor-pointer"
+                      :class="{ selected: form.route === value }"
+                      @click.stop="selectRoute(value)"
+                    >
+                      {{ name }}
+                    </div>
+                    <div
+                      v-if="Object.keys(routeOptions).length === 0"
+                      class="route-option disabled"
+                    >
+                      无可用地图
+                    </div>
+                  </div>
+                </transition>
               </div>
-              <div class="flex-1 relative">
-                <input v-model.number="form.duration" type="number" placeholder="时间" class="input pr-14" :class="{ 'opacity-50': !userTyping }" @focus="userTyping = true" @blur="onDurationBlur" />
-                <span class="absolute right-4 top-1/2 -translate-y-1/2 t-caption text-tertiary select-none">分</span>
+            </div>
+
+            <div class="form-group mb-4">
+              <label class="block text-sm theme-text-secondary mt-2 mb-2 font-medium">
+                <div class="flex justify-between items-center">
+                  <span>跑步数据</span>
+                  <span class="text-xs theme-text-tertiary">配速 {{ paceDisplay }}</span>
+                </div>
+              </label>
+              <div class="input-container flex items-center gap-2">
+                <div class="input-wrapper flex-1 flex items-center theme-card-soft rounded-md px-3">
+                  <input
+                    v-model.number="form.distance"
+                    type="number"
+                    step="1"
+                    placeholder="输入里程"
+                    required
+                    class="flex-1 py-2 text-sm theme-text-secondary outline-none pr-2"
+                  />
+                  <span class="unit text-sm theme-text-tertiary pl-2">米</span>
+                </div>
+                <div
+                  class="input-wrapper flex-1 flex items-center theme-card-soft rounded-md px-3"
+                >
+                  <input
+                    v-model.number="form.duration"
+                    type="number"
+                    placeholder="分"
+                    class="flex-1 py-2 text-sm theme-text-secondary outline-none pr-2"
+                    @focus="userTyping = true"
+                    @blur="onDurationBlur"
+                  />
+                  <span class="unit text-sm theme-text-tertiary pl-2">分</span>
+                </div>
+                <button
+                  type="button"
+                  class="px-3 py-2 theme-card-soft text-sm theme-text-secondary cursor-pointer disabled:opacity-50 rounded-md"
+                  @click="onRandomFill"
+                  :disabled="submitting || randomizing"
+                  aria-label="随机里程"
+                >
+                  <i :class="['fa-solid', randomizing ? 'fa-spinner fa-spin' : 'fa-dice']"></i>
+                </button>
               </div>
-              <button type="button" @click="onRandomFill" :disabled="submitting || randomizing" class="btn btn-ghost shrink-0 px-3" style="border-radius: var(--radius-input); background: var(--bg-sunken)">
-                <svg v-if="!randomizing" class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                <div v-else class="spinner"></div>
+            </div>
+
+            <transition name="confirm-actions" mode="out-in">
+              <button
+                v-if="!awaitingSubmitConfirm"
+                key="single-submit"
+                type="submit"
+                class="w-full p-2 font-semibold theme-text-primary theme-card-soft rounded-full disabled:cursor-not-allowed disabled:opacity-60"
+                :disabled="submitting || !isFormValid"
+              >
+                提交记录
               </button>
-            </div>
-          </div>
-          
-          <!-- Submit -->
-          <div class="pt-1">
-            <transition name="swap" mode="out-in">
-              <button v-if="!awaitingSubmitConfirm" key="submit" type="submit" class="btn btn-accent w-full" :disabled="submitting || !isFormValid">提交记录</button>
-              <div v-else key="confirm" class="flex gap-2">
-                <button type="button" class="btn btn-ghost flex-1" style="background: var(--bg-sunken)" :disabled="submitting" @click="cancelSubmitConfirm">取消</button>
-                <button type="button" class="btn btn-accent flex-1" :disabled="submitting || !isFormValid" @click="confirmSubmit"><div v-if="submitting" class="spinner"></div><span v-else>确认提交</span></button>
+              <div v-else key="double-submit" class="flex w-full gap-3">
+                <button
+                  type="button"
+                  class="flex-1 p-2 rounded-full submit-confirm-cancel disabled:cursor-not-allowed disabled:opacity-70"
+                  :disabled="submitting || randomizing"
+                  @click="cancelSubmitConfirm"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  class="flex-1 p-2 rounded-full submit-confirm-ok disabled:cursor-not-allowed disabled:opacity-70"
+                  :disabled="submitting || !isFormValid"
+                  @click="confirmSubmit"
+                >
+                  <i v-if="!submitting" class="ri-check-fill"></i>
+                  <span class="loader" v-else></span>
+                  {{ submitting ? '提交中...' : '确认' }}
+                </button>
               </div>
             </transition>
           </div>
-          
+
+          <!-- 定时任务 -->
+          <div v-show="activeTab === 'schedule'" class="space-y-4">
+            <div v-if="schedulePanelMounted">
+              <AutoConfig inline @saved="onAutoConfigSaved" />
+            </div>
+          </div>
         </div>
-        
-        <div v-show="activeTab === 'schedule'"><div v-if="schedulePanelMounted"><AutoConfig inline @saved="onAutoConfigSaved" /></div></div>
-        
       </div>
     </form>
-    
-    <div v-show="activeTab === 'submit'" class="card px-5 py-5">
-      <h3 class="t-label mb-3">路线预览</h3>
-      <MapPreview v-if="mapRenderUnlocked" :track="generatedTrack" :ready="mapReady" :map-style="isDark ? 'dark' : 'light'" class="w-full" />
-      <div v-else class="w-full h-40 rounded-xl skeleton"></div>
+
+    <!-- 路线预览 -->
+    <div v-show="activeTab === 'submit'" class="theme-card rounded-2xl p-5 mb-5 w-full box-border">
+      <div class="flex justify-between items-center border-b border-dashed theme-card-divider pb-2">
+        <div class="text-sm font-semibold theme-text-secondary">路线预览</div>
+      </div>
+      <MapPreview
+        v-if="mapRenderUnlocked"
+        :track="generatedTrack"
+        :ready="mapReady"
+        :map-style="isDark ? 'dark' : 'light'"
+        class="pt-2 w-full transition-all duration-300"
+      />
+      <div v-else class="pt-2 text-xs theme-text-tertiary"></div>
     </div>
-    
   </div>
 </template>
 
@@ -100,92 +202,541 @@ import { submitRun as submitRunApi, useRouteGenerator } from '@/composables/useR
 import { useDataStore } from '@/composables/useDataStore';
 import { useThemeStore } from '@/composables/useTheme';
 import { waitForAutorunPingReady } from '@/sdk/autorun';
-import { computeDurationFromDistance, formatPaceMinutesPerKm, normalizeRoundedRunTime, randomIntNonThousand, resolveRunBoundsFromStandard, isPaceWithinLimits } from '@/utils/run';
+import {
+  calculatePaceMinutesPerKm,
+  computeDurationFromDistance,
+  formatPaceMinutesPerKm,
+  normalizeRoundedRunTime,
+  randomIntNonThousand,
+  resolveRunBoundsFromStandard,
+  isPaceWithinLimits,
+} from '@/utils/run';
 
 const MapPreview = defineAsyncComponent(() => import('./MapPreview.vue'));
 const AutoConfig = defineAsyncComponent(() => import('./AutoConfig.vue'));
+
 const showMessage = inject('showMessage');
-const { userInfo, runStandard, runInfo, activityInfo, submitRunDistance, submitRunRoute } = useDataStore();
+
+const { userInfo, runStandard, runInfo, activityInfo, submitRunDistance, submitRunRoute } =
+  useDataStore();
+
 const emit = defineEmits(['submitted']);
 
-const tabs = [{ key: 'submit', label: '手动提交' }, { key: 'schedule', label: '自动提交' }];
-const activeTab = ref('submit'); const schedulePanelMounted = ref(false);
-watch(activeTab, t => { if (t === 'schedule') schedulePanelMounted.value = true; }, { immediate: true });
+const tabs = [
+  { key: 'submit', label: '手动提交', icon: 'ri-add-line' },
+  { key: 'schedule', label: '自动提交', icon: 'ri-calendar-schedule-line' },
+];
 
-const form = ref({ distance: submitRunDistance.value, route: submitRunRoute.value, duration: 0 });
-const mapRenderUnlocked = ref(false); const submitting = ref(false); const randomizing = ref(false); const awaitingSubmitConfirm = ref(false); const showRouteOptions = ref(false);
-const themeStore = useThemeStore(); const isDark = computed(() => themeStore.isDark);
+const activeTab = ref('submit');
+const schedulePanelMounted = ref(false);
 
-const bounds = computed(() => resolveRunBoundsFromStandard(userInfo.value || {}, runStandard.value || {}));
-const isDistanceValid = computed(() => { const d = Number(form.value.distance); return Number.isInteger(d) && d > 0; });
-const isPaceValid = computed(() => { const d = Number(form.value.distance); const t = userDuration.value || Math.floor(predictedRunTime.value); return d && t ? isPaceWithinLimits(d, t) : false; });
-const isFormValid = computed(() => isDistanceValid.value && isPaceValid.value);
+watch(
+  activeTab,
+  (tab) => {
+    if (tab === 'schedule') {
+      schedulePanelMounted.value = true;
+    }
+  },
+  { immediate: true },
+);
 
-const predictedRunTime = ref(0);
-const calcTime = d => { if (!Number.isInteger(d) || d <= 0) return 0; return normalizeRoundedRunTime(computeDurationFromDistance(d, { minMinutes: bounds.value.timeMin, maxMinutes: bounds.value.timeMax }), d, { minMinutes: bounds.value.timeMin, maxMinutes: bounds.value.timeMax }); };
-const userTyping = ref(false);
-watch(() => Number(form.value.distance), d => { if (!userTyping.value) { const t = calcTime(d); predictedRunTime.value = t; form.value.duration = Math.floor(t); } }, { immediate: true });
-watch(() => form.value.duration, d => { if (!userTyping.value) return; if (d > 0) predictedRunTime.value = 0; });
+// 提交记录相关
+const form = ref({
+  distance: submitRunDistance.value,
+  route: submitRunRoute.value,
+  duration: 0,
+});
+const mapRenderUnlocked = ref(false);
+const submitting = ref(false);
+const randomizing = ref(false);
+const awaitingSubmitConfirm = ref(false);
+const showRouteOptions = ref(false);
 
-const userDuration = computed(() => { const d = Number(form.value.duration); return Number.isInteger(d) && d > 0 ? d : 0; });
-const paceDisplay = computed(() => { const d = Number(form.value.distance); const t = userDuration.value || Math.floor(predictedRunTime.value); return Number.isInteger(d) && d > 0 && t ? formatPaceMinutesPerKm(d, t) : "0'00''/km"; });
+const themeStore = useThemeStore();
+const isDark = computed(() => themeStore.isDark);
 
-const buildRandom = () => { const b = bounds.value; const d = randomIntNonThousand(b.distanceMin, b.distanceMax); const rt = normalizeRoundedRunTime(computeDurationFromDistance(d, { minMinutes: b.timeMin, maxMinutes: b.timeMax }), d, { minMinutes: b.timeMin, maxMinutes: b.timeMax }); return { map_id: String(form.value.route || selectedRoute.value || 'default').trim() || 'default', run_distance: d, run_time: rt, track_points: '' }; };
-const applyRandom = rr => { if (!rr) return; const id = String(rr.map_id || '').trim(); if (id && Object.prototype.hasOwnProperty.call(routeOptions.value, id)) { selectMapRoute(id); form.value.route = id; } form.value.distance = rr.run_distance; };
+const distanceBounds = computed(() =>
+  resolveRunBoundsFromStandard(userInfo.value || {}, runStandard.value || {}),
+);
 
-function onDurationBlur() { userTyping.value = false; if (!form.value.duration || form.value.duration <= 0) { const t = calcTime(form.value.distance); predictedRunTime.value = t; form.value.duration = Math.floor(t); } }
-
-async function onRandomFill() { if (submitting.value || randomizing.value) return; randomizing.value = true; userTyping.value = false; try { const rr = buildRandom(); applyRandom(rr); predictedRunTime.value = rr.run_time || calcTime(Number(form.value.distance)); form.value.duration = Math.floor(predictedRunTime.value); } finally { randomizing.value = false; awaitingSubmitConfirm.value = false; } }
-
-watch(() => [form.value.distance, form.value.route], ([d, r]) => { submitRunDistance.value = d; submitRunRoute.value = r; awaitingSubmitConfirm.value = false; });
-
-const { mapsLoaded, routeOptions, selectedRoute, load: loadMaps, selectRoute: selectMapRoute, getRouteName, generatedTrack, mapReady } = useRouteGenerator(computed(() => form.value.distance), computed(() => form.value.route));
-
-const stats = computed(() => { const s = runStandard.value || {}; const sem = String(s.semesterYear || '').slice(-1); return { semesterEndDateText: sem === '1' ? s.firstSemesterDateEnd || '' : sem === '2' ? s.secondSemesterDateEnd || '' : '' }; });
-
-const summaryCards = computed(() => {
-  const a = activityInfo.value || {}, r = runInfo.value || {}, s = runStandard.value || {}, u = userInfo.value || {};
-  const ca = Number(a.joinNum || 0), ta = Number(a.totalNum || 0);
-  const required = u.gender === '1' ? Number(s.boyAllRunTime || 0) : u.gender === '2' ? Number(s.girlAllRunTime || 0) : 0;
-  const completed = Number(r.runValidCount || 0);
-  const dist = Number(r.runValidDistance || 0);
-  const targetDist = u.gender === '1' ? Number(s.boyAllRunDistance || 0) : u.gender === '2' ? Number(s.girlAllRunDistance || 0) : 0;
-  return [
-    { label: '俱乐部', value: ta ? `${Math.round(ca/ta*100)}%` : '0%', detail: `${ca}/${ta}` },
-    { label: '跑步次数', value: `${required ? Math.min(100, Math.round(completed/required*100)) : 0}%`, detail: `${completed}/${required}` },
-    { label: '跑步里程', value: `${targetDist ? Math.min(100, Math.round(dist/targetDist*100)) : 0}%`, detail: `${(Math.floor(dist/1000*10)/10).toFixed(1)}/${(targetDist/1000).toFixed(1)}` },
-  ];
+const isDistanceValid = computed(() => {
+  const distance = Number(form.value.distance);
+  return Number.isInteger(distance) && distance > 0;
 });
 
-function selectRoute(route) { if (!Object.prototype.hasOwnProperty.call(routeOptions.value, route)) return; selectMapRoute(route); form.value.route = route; submitRunRoute.value = route; showRouteOptions.value = false; }
+const isPaceValid = computed(() => {
+  const distance = Number(form.value.distance);
+  const time = userDuration.value || Math.floor(predictedRunTime.value);
+  if (!distance || !time) return false;
+  return isPaceWithinLimits(distance, time);
+});
+
+const isFormValid = computed(() => {
+  return isDistanceValid.value && isPaceValid.value;
+});
+
+const distanceErrorText = computed(() => {
+  if (!isDistanceValid.value) return '跑步里程需为大于 0 的整数';
+  if (!isPaceValid.value) return '配速不合理，请控制在 4.0 - 10.0 km/h 之间';
+  return '';
+});
+
+const predictedRunTime = ref(0);
+
+const calculatePredictedRunTime = (distance) => {
+  if (!Number.isInteger(distance) || distance <= 0) return 0;
+  const rawDuration = computeDurationFromDistance(distance, {
+    minMinutes: distanceBounds.value.timeMin,
+    maxMinutes: distanceBounds.value.timeMax,
+  });
+  return normalizeRoundedRunTime(rawDuration, distance, {
+    minMinutes: distanceBounds.value.timeMin,
+    maxMinutes: distanceBounds.value.timeMax,
+  });
+};
+
+const userTyping = ref(false);
+
+watch(
+  () => Number(form.value.distance),
+  (distance) => {
+    if (!userTyping.value) {
+      const time = calculatePredictedRunTime(distance);
+      predictedRunTime.value = time;
+      form.value.duration = Math.floor(time);
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  () => form.value.duration,
+  (duration) => {
+    if (!userTyping.value) return;
+    if (duration > 0) {
+      predictedRunTime.value = 0;
+    }
+  },
+);
+
+const userDuration = computed(() => {
+  const d = Number(form.value.duration);
+  return Number.isInteger(d) && d > 0 ? d : 0;
+});
+
+const paceDisplay = computed(() => {
+  const distance = Number(form.value.distance);
+  const time = userDuration.value || Math.floor(predictedRunTime.value);
+  if (!Number.isInteger(distance) || distance <= 0 || !time) {
+    return "0'00''/km";
+  }
+
+  return formatPaceMinutesPerKm(distance, time);
+});
+
+const durationDisplay = computed(() => {
+  const minutes = Math.floor(predictedRunTime.value);
+  if (!minutes || minutes <= 0) {
+    return '';
+  }
+  return String(minutes);
+});
+
+const buildLocalRandomRun = () => {
+  const bounds = distanceBounds.value;
+  const runDistance = randomIntNonThousand(bounds.distanceMin, bounds.distanceMax);
+  const duration = computeDurationFromDistance(runDistance, {
+    minMinutes: bounds.timeMin,
+    maxMinutes: bounds.timeMax,
+  });
+  const runTime = normalizeRoundedRunTime(duration, runDistance, {
+    minMinutes: bounds.timeMin,
+    maxMinutes: bounds.timeMax,
+  });
+
+  const route = String(form.value.route || selectedRoute.value || 'default').trim() || 'default';
+  const paceMinutesPerKm = calculatePaceMinutesPerKm(runDistance, runTime);
+
+  console.info('[SubmitRun] Random run generated', {
+    route,
+    distanceBounds: {
+      min: bounds.distanceMin,
+      max: bounds.distanceMax,
+    },
+    timeBounds: {
+      min: bounds.timeMin,
+      max: bounds.timeMax,
+    },
+    runDistance,
+    rawDurationMinutes: duration,
+    roundedRunTimeMinutes: runTime,
+    paceMinutesPerKm,
+    paceDisplay: formatPaceMinutesPerKm(runDistance, runTime),
+  });
+
+  return {
+    map_id: route,
+    run_distance: runDistance,
+    run_time: runTime,
+    track_points: '',
+  };
+};
+
+const applyRandomRun = (randomRun) => {
+  if (!randomRun) return;
+
+  const mapId = String(randomRun.map_id || '').trim();
+  if (mapId && Object.prototype.hasOwnProperty.call(routeOptions.value, mapId)) {
+    selectMapRoute(mapId);
+    form.value.route = mapId;
+  }
+
+  form.value.distance = randomRun.run_distance;
+};
+
+function onDurationBlur() {
+  userTyping.value = false;
+  if (!form.value.duration || form.value.duration <= 0) {
+    const time = calculatePredictedRunTime(form.value.distance);
+    predictedRunTime.value = time;
+    form.value.duration = Math.floor(time);
+  }
+}
+
+async function onRandomFill() {
+  if (submitting.value || randomizing.value) return;
+
+  randomizing.value = true;
+  userTyping.value = false;
+  try {
+    const randomRun = buildLocalRandomRun();
+    applyRandomRun(randomRun);
+    predictedRunTime.value =
+      randomRun.run_time || calculatePredictedRunTime(Number(form.value.distance));
+    form.value.duration = Math.floor(predictedRunTime.value);
+  } finally {
+    randomizing.value = false;
+    awaitingSubmitConfirm.value = false;
+  }
+}
+
+watch(
+  () => [form.value.distance, form.value.route],
+  ([distance, route]) => {
+    submitRunDistance.value = distance;
+    submitRunRoute.value = route;
+    awaitingSubmitConfirm.value = false;
+  },
+);
+
+const {
+  mapsLoaded,
+  routeOptions,
+  selectedRoute,
+  load: loadMaps,
+  selectRoute: selectMapRoute,
+  getRouteName,
+  generatedTrack,
+  mapReady,
+} = useRouteGenerator(
+  computed(() => form.value.distance),
+  computed(() => form.value.route),
+);
+
+// 统计数据
+const stats = computed(() => {
+  const activity = activityInfo.value || {};
+  const run = runInfo.value || {};
+  const standard = runStandard.value || {};
+  const user = userInfo.value || {};
+
+  const completedActivities = Number(activity.joinNum || 0);
+  const totalActivities = Number(activity.totalNum || 0);
+  const clubCompletionRate =
+    totalActivities > 0 ? (completedActivities / totalActivities) * 100 : 0;
+  const clubCompletionRateText =
+    totalActivities === 0 ? '0%' : `${Math.round(clubCompletionRate)}%`;
+
+  // Read semester targets by gender.
+  const totalRequiredRuns =
+    user.gender === '1'
+      ? Number(standard.boyAllRunTime || 0)
+      : user.gender === '2'
+        ? Number(standard.girlAllRunTime || 0)
+        : 0;
+  const completedRuns = Number(run.runValidCount || 0);
+  const runCompletionRate = totalRequiredRuns
+    ? Math.min(100, Math.round((completedRuns / totalRequiredRuns) * 100))
+    : 0;
+
+  const totalDistanceMeters = Number(run.runValidDistance || 0);
+  const totalDistanceKm = (Math.floor((totalDistanceMeters / 1000) * 10) / 10).toFixed(1);
+  const targetDistanceKm =
+    user.gender === '1'
+      ? (Number(standard.boyAllRunDistance || 0) / 1000).toFixed(1)
+      : user.gender === '2'
+        ? (Number(standard.girlAllRunDistance || 0) / 1000).toFixed(1)
+        : '0.0';
+  const targetDistanceNumber = Number(targetDistanceKm);
+  const currentDistanceNumber = Number(totalDistanceKm);
+  const distancePercentage = targetDistanceNumber
+    ? Math.min(100, (currentDistanceNumber / targetDistanceNumber) * 100)
+    : 0;
+
+  const semYear = String(standard.semesterYear || '');
+  const semesterFlag = semYear.slice(-1);
+  const semesterEndDateText =
+    semesterFlag === '1'
+      ? standard.firstSemesterDateEnd || ''
+      : semesterFlag === '2'
+        ? standard.secondSemesterDateEnd || ''
+        : '';
+
+  const distancePercentageText = `${Math.round(distancePercentage)}%`;
+  const targetDistanceKmDisplay = targetDistanceNumber > 0 ? targetDistanceKm : '0';
+
+  return {
+    semesterEndDateText,
+    summaryCards: [
+      {
+        label: '俱乐部活动',
+        value: clubCompletionRateText,
+        detail: `${completedActivities}/${totalActivities}`,
+      },
+      {
+        label: '跑步次数',
+        value: `${runCompletionRate}%`,
+        detail: `${completedRuns}/${totalRequiredRuns}`,
+      },
+      {
+        label: '跑步里程',
+        value: distancePercentageText,
+        detail: `${totalDistanceKm}/${targetDistanceKmDisplay}`,
+      },
+    ],
+  };
+});
+
+const summaryCards = computed(() => stats.value.summaryCards);
+
+function selectRoute(route) {
+  if (!Object.prototype.hasOwnProperty.call(routeOptions.value, route)) {
+    return;
+  }
+  selectMapRoute(route);
+  form.value.route = route;
+  submitRunRoute.value = route;
+  showRouteOptions.value = false;
+}
 
 const handleSubmit = async () => {
   submitting.value = true;
   try {
-    const res = await submitRunApi({ distance: form.value.distance, route: form.value.route, runTime: userDuration.value || Math.floor(predictedRunTime.value) });
-    if (!res.ok) { showMessage(res.data?.msg || res.error?.message || '提交失败', 'error'); return; }
-    showMessage(res.data?.response?.resultDesc || '提交成功', 'success'); emit('submitted');
-  } finally { submitting.value = false; awaitingSubmitConfirm.value = false; }
+    const runTime = userDuration.value || Math.floor(predictedRunTime.value);
+
+    const res = await submitRunApi({
+      distance: form.value.distance,
+      route: form.value.route,
+      runTime,
+    });
+    if (!res.ok) {
+      let msg = res.data?.msg || res.error?.message || '提交失败，请重试';
+
+      if (res.msg === 'not_login') {
+        msg = '请先登录';
+      } else if (res.msg === 'distance_invalid') {
+        msg = '跑步里程需为大于 0 的整数';
+      } else if (res.msg === 'track_invalid') {
+        msg = '轨迹生成失败，请重新随机里程';
+      }
+
+      showMessage(msg, 'error');
+      return;
+    }
+
+    showMessage(res.data?.response?.resultDesc || '提交成功', 'success');
+    emit('submitted');
+  } finally {
+    submitting.value = false;
+    awaitingSubmitConfirm.value = false;
+  }
 };
 
-const requestSubmitConfirm = () => { if (!isFormValid.value) { showMessage('请检查跑步数据', 'error'); return; } awaitingSubmitConfirm.value = true; };
-const cancelSubmitConfirm = () => { awaitingSubmitConfirm.value = false; };
-const confirmSubmit = () => { if (!awaitingSubmitConfirm.value || submitting.value) return; handleSubmit(); };
-const onFormSubmit = () => { if (activeTab.value !== 'submit' || submitting.value) return; requestSubmitConfirm(); };
-const onAutoConfigSaved = () => showMessage('保存成功', 'success');
+const requestSubmitConfirm = () => {
+  if (!isFormValid.value) {
+    showMessage(distanceErrorText.value, 'error');
+    return;
+  }
+  awaitingSubmitConfirm.value = true;
+};
 
-onMounted(async () => { await waitForAutorunPingReady(); mapRenderUnlocked.value = true; });
+const cancelSubmitConfirm = () => {
+  awaitingSubmitConfirm.value = false;
+};
+
+const confirmSubmit = () => {
+  if (!awaitingSubmitConfirm.value || submitting.value) return;
+  handleSubmit();
+};
+
+const onFormSubmit = () => {
+  if (activeTab.value !== 'submit' || submitting.value) return;
+  requestSubmitConfirm();
+};
+
+const onAutoConfigSaved = () => {
+  showMessage('保存成功', 'success');
+};
+
+const unlockMapRender = async () => {
+  await waitForAutorunPingReady();
+  mapRenderUnlocked.value = true;
+};
+
+onMounted(() => {
+  unlockMapRender();
+});
 
 loadMaps().then(async () => {
-  if (submitRunRoute.value) form.value.route = submitRunRoute.value; else if (selectedRoute.value) form.value.route = selectedRoute.value;
-  const cached = Number(submitRunDistance.value);
-  if (Number.isInteger(cached) && cached > 0) form.value.distance = cached; else await onRandomFill();
+  if (submitRunRoute.value) {
+    form.value.route = submitRunRoute.value;
+  } else if (selectedRoute.value) {
+    form.value.route = selectedRoute.value;
+  }
+
+  const cachedDistance = Number(submitRunDistance.value);
+
+  if (Number.isInteger(cachedDistance) && cachedDistance > 0) {
+    form.value.distance = cachedDistance;
+  } else {
+    await onRandomFill();
+  }
 });
 </script>
 
 <style scoped>
-.drop-enter-active, .drop-leave-active { transition: all 0.2s var(--ease); }
-.drop-enter-from, .drop-leave-to { opacity: 0; transform: translateY(-6px) scale(0.98); }
-.swap-enter-active, .swap-leave-active { transition: opacity 0.12s var(--ease); }
-.swap-enter-from, .swap-leave-to { opacity: 0; }
+/* 表单卡片容器 - 确保浮于路线预览之上 */
+.form-card-container {
+  position: relative;
+  z-index: 10;
+}
+
+.route-dropdown {
+  position: relative;
+  user-select: none;
+  box-sizing: border-box;
+  overflow: visible;
+  z-index: 100;
+}
+
+.dropdown-arrow {
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid var(--text-tertiary);
+  margin-left: 8px;
+  transition: transform 0.2s;
+}
+
+.dropdown-arrow.active {
+  transform: rotate(180deg);
+}
+
+.route-options {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 110%;
+  border-radius: 8px;
+  z-index: 10000;
+  padding: 4px 0;
+  max-height: 300px;
+  overflow-y: auto;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+  pointer-events: auto;
+}
+
+/* 确保表单卡片容器允许下拉菜单溢出 */
+:deep(.form-card-container) {
+  overflow: visible;
+}
+
+.route-option {
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.route-option.selected,
+.route-option:hover {
+  background: var(--action-hover-bg);
+  color: var(--text-primary);
+}
+
+.loader {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #fff;
+  border-top: 2px solid #3b9eff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+.confirm-actions-enter-active,
+.confirm-actions-leave-active {
+  transition: all 0.18s ease;
+}
+
+.confirm-actions-enter-from,
+.confirm-actions-leave-to {
+  opacity: 0;
+  transform: translateY(4px) scale(0.985);
+}
+
+.submit-tab-inactive {
+  color: var(--text-secondary);
+}
+
+.submit-tab-inactive:hover {
+  color: var(--text-primary);
+  background-color: var(--action-hover-bg);
+}
+
+.submit-confirm-cancel {
+  color: var(--text-secondary);
+  border: 1px dashed var(--card-divider);
+  background-color: transparent;
+}
+
+.submit-confirm-cancel:hover {
+  background-color: var(--action-hover-bg);
+}
+
+.submit-confirm-ok {
+  color: var(--button-primary-text);
+  background-color: var(--button-primary-bg);
+}
+
+.submit-confirm-ok:hover {
+  filter: brightness(1.06);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.duration-readonly {
+  opacity: 0.55;
+  background-color: var(--card-soft-bg);
+}
+
+.duration-readonly input[readonly] {
+  cursor: not-allowed;
+  user-select: none;
+}
 </style>

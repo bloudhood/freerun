@@ -1,103 +1,155 @@
 <template>
-  <div class="min-h-full flex flex-col bg-primary">
-    
-    <!-- Ambient glow — softer, more subtle -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden">
-      <div class="absolute -top-40 -right-40 w-[28rem] h-[28rem] rounded-full"
-           style="background: radial-gradient(circle, var(--accent-soft) 0%, transparent 70%); opacity: 0.6"></div>
-      <div class="absolute -bottom-56 -left-56 w-[36rem] h-[36rem] rounded-full"
-           style="background: radial-gradient(circle, var(--blue-soft) 0%, transparent 70%); opacity: 0.4"></div>
-    </div>
-    
-    <div class="relative z-10 flex-1 flex flex-col items-center justify-center px-6">
-      
-      <!-- Logo -->
-      <div class="mb-14 text-center animate-scale-in">
-        <div class="inline-flex items-center justify-center w-[72px] h-[72px] rounded-[20px] mb-7"
-             style="background: var(--accent-gradient); box-shadow: var(--shadow-accent)">
-          <svg class="w-9 h-9 text-white" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M13.145 1.978a1 1 0 0 1 1.318 0l5.847 5.127a1 1 0 0 1 .247 1.311l-2.25 3.45a1 1 0 0 1-1.08.435l-4.357-1.196a1 1 0 0 0-.86.2l-3.793 2.903a1 1 0 0 0-.142 1.448l4.49 5.013a1 1 0 0 1-.006 1.376L9.11 22.3a1 1 0 0 1-1.092.297l-5.764-1.98a1 1 0 0 1-.66-1.088L3.138 10.06a1 1 0 0 1 .552-.836l9.455-7.246z"/>
-          </svg>
+  <div
+    class="auth-page h-full min-h-0 w-full flex flex-col justify-center items-center relative px-4 pt-14 theme-text-primary animate-fade-in"
+  >
+    <AppHeader ref="appHeaderRef" :show-github="false" />
+
+    <div class="w-full max-w-[420px] corner-apple glass-apple animate-slide-up relative z-10">
+      <div class="mb-10 text-center flex flex-col items-center">
+        <!-- Logo Mark -->
+        <div class="w-14 h-14 rounded-[18px] bg-anthropic-orange/10 dark:bg-anthropic-orange/20 flex items-center justify-center mb-5 shadow-inner">
+          <i class="ri-leaf-line text-2xl text-anthropic-orange"></i>
         </div>
-        <h1 class="t-display" style="font-size: 2rem">Byerun</h1>
-        <p class="t-callout mt-2 text-secondary">校园跑步 · 轻松完成</p>
+        <h1 class="text-2xl font-heading font-medium text-anthropic-dark dark:text-anthropic-light tracking-tight mb-2">
+          Byerun Web
+        </h1>
       </div>
-      
-      <!-- Card -->
-      <div class="w-full max-w-[380px] card-glass px-7 py-7 animate-fade-up space-y-5" style="animation-delay: 80ms">
-        
+      <form @submit.prevent="handleSubmit" @focusout="handleInputBlur" class="space-y-5">
         <div>
-          <label class="t-label block mb-2">手机号</label>
-          <input v-model="phone" type="tel" placeholder="请输入手机号" required class="input" autocomplete="tel" />
+          <label class="block text-xs font-semibold mb-2 theme-text-secondary uppercase tracking-wider">手机号</label>
+          <div class="relative group">
+            <i
+              class="ri-smartphone-line absolute left-4 top-1/2 -translate-y-1/2 theme-text-secondary pointer-events-none transition-colors group-focus-within:text-anthropic-orange"
+            ></i>
+            <input
+              v-model="phone"
+              placeholder="请输入手机号"
+              required
+              @blur="handleInputBlur"
+              class="input-apple block w-full p-3 pl-11 text-sm rounded-xl placeholder:text-sm theme-text-primary"
+            />
+          </div>
         </div>
-        
+        <div v-if="mode === 'reset'">
+          <label class="block text-xs font-semibold mb-2 theme-text-secondary uppercase tracking-wider">新密码</label>
+          <div class="relative group">
+            <i
+              class="ri-lock-2-line absolute left-4 top-1/2 -translate-y-1/2 theme-text-secondary pointer-events-none transition-colors group-focus-within:text-anthropic-orange"
+            ></i>
+            <input
+              v-model="password"
+              type="password"
+              placeholder="请设置新密码"
+              required
+              @blur="handleInputBlur"
+              class="input-apple block w-full p-3 pl-11 text-sm rounded-xl placeholder:text-sm theme-text-primary"
+            />
+          </div>
+        </div>
+        <div v-if="mode === 'reset'">
+          <label class="block text-xs font-semibold mb-2 theme-text-secondary uppercase tracking-wider">验证码</label>
+          <div class="flex gap-3">
+            <div class="relative flex-1 group">
+              <i
+                class="ri-key-2-line absolute left-4 top-1/2 -translate-y-1/2 theme-text-secondary pointer-events-none transition-colors group-focus-within:text-anthropic-orange"
+              ></i>
+              <input
+                v-model="code"
+                placeholder="请输入短信验证码"
+                required
+                @blur="handleInputBlur"
+                class="input-apple w-full p-3 pl-11 text-sm rounded-xl placeholder:text-sm theme-text-primary"
+              />
+            </div>
+            <button
+              type="button"
+              @click="sendCode"
+              :disabled="sending"
+              class="btn-apple px-4 py-2 rounded-xl text-sm font-medium flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap bg-anthropic-dark dark:bg-anthropic-light text-anthropic-light dark:text-anthropic-dark"
+            >
+              <span v-if="!sending">发送验证码</span>
+              <div
+                v-else
+                class="w-4 h-4 border-2 border-current/30 rounded-full border-t-current animate-spin"
+              ></div>
+            </button>
+          </div>
+        </div>
         <div v-if="mode === 'login'">
-          <label class="t-label block mb-2">密码</label>
-          <input v-model="password" type="password" placeholder="请输入密码" required class="input" autocomplete="current-password" />
+          <label class="block text-xs font-semibold mb-2 theme-text-secondary uppercase tracking-wider">密码</label>
+          <div class="relative group">
+            <i
+              class="ri-lock-2-line absolute left-4 top-1/2 -translate-y-1/2 theme-text-secondary pointer-events-none transition-colors group-focus-within:text-anthropic-orange"
+            ></i>
+            <input
+              v-model="password"
+              type="password"
+              placeholder="请输入密码"
+              required
+              @blur="handleInputBlur"
+              class="input-apple block w-full p-3 pl-11 text-sm rounded-xl placeholder:text-sm theme-text-primary"
+            />
+          </div>
         </div>
-        
-        <template v-if="mode === 'reset'">
-          <div>
-            <label class="t-label block mb-2">新密码</label>
-            <input v-model="password" type="password" placeholder="设置新密码" required class="input" />
-          </div>
-          <div>
-            <label class="t-label block mb-2">验证码</label>
-            <div class="flex gap-2">
-              <input v-model="code" placeholder="验证码" required class="input flex-1" autocomplete="one-time-code" />
-              <button type="button" @click="sendCode" :disabled="sending" class="btn btn-ghost shrink-0 whitespace-nowrap">
-                <div v-if="sending" class="spinner"></div>
-                <span v-else>发送验证码</span>
-              </button>
-            </div>
-          </div>
-        </template>
-        
-        <!-- Options row -->
-        <div v-if="mode === 'login'" class="flex items-center justify-between py-1">
-          <label class="flex items-center gap-2.5 cursor-pointer select-none">
+        <div class="flex items-center justify-between mt-2 mb-6">
+          <label v-if="mode === 'login'" class="flex items-center space-x-2 cursor-pointer group">
             <input type="checkbox" v-model="rememberMe" class="hidden" />
-            <div class="w-[18px] h-[18px] rounded-md flex items-center justify-center transition-all duration-150"
-                 :style="{ background: rememberMe ? 'var(--accent)' : 'var(--bg-sunken)', border: rememberMe ? 'none' : '1.5px solid var(--border-strong)' }">
-              <svg v-if="rememberMe" class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <div
+              class="w-4 h-4 border-2 rounded flex items-center justify-center transition-all duration-300 auth-remember-box"
+              :class="rememberMe ? 'bg-anthropic-orange border-anthropic-orange' : 'border-anthropic-mid-gray/50'"
+            >
+              <i v-if="rememberMe" class="ri-check-line text-xs text-white scale-in-center"></i>
             </div>
-            <span class="t-caption" style="color: var(--fg-secondary)">记住我</span>
+            <span class="text-xs font-medium theme-text-secondary group-hover:text-anthropic-dark dark:group-hover:text-anthropic-light transition-colors">记住我</span>
           </label>
-          <a href="#" @click.prevent="mode = 'reset'" class="t-caption font-medium" style="color: var(--accent)">忘记密码？</a>
+          <a
+            v-if="mode === 'login'"
+            href="#"
+            @click.prevent="mode = 'reset'"
+            class="text-xs font-medium text-anthropic-orange hover:text-anthropic-dark dark:hover:text-anthropic-light transition-colors ml-auto"
+            >忘记密码？</a
+          >
         </div>
-        
-        <!-- Proxy -->
-        <div class="flex items-center gap-2.5 py-1">
-          <div class="status-dot" :class="proxyOnline ? 'status-dot-online' : 'status-dot-offline'"></div>
-          <span class="t-caption" style="color: var(--fg-tertiary)">{{ proxyOnline ? '代理服务器在线' : '代理服务器离线' }}</span>
+        <div class="pt-2">
+          <div class="flex items-center gap-2 mb-3 text-xs">
+            <span :class="proxyOnline ? 'text-green-500' : 'text-red-500'">
+              <i :class="proxyOnline ? 'ri-checkbox-circle-fill' : 'ri-close-circle-fill'"></i>
+            </span>
+            <span class="theme-text-secondary">
+              {{ proxyOnline ? '代理服务器在线' : '代理服务器离线' }}
+            </span>
+          </div>
+          <button
+            type="submit"
+            :disabled="loading || !proxyOnline"
+            class="btn-apple w-full font-heading font-medium text-base rounded-2xl py-3.5 bg-anthropic-orange text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+          >
+            <span v-if="!loading">{{ mode === 'login' ? '立即登录' : '重置密码' }}</span>
+            <div
+              v-else
+              class="w-5 h-5 border-2 border-white/30 rounded-full border-t-white animate-spin mx-auto"
+            ></div>
+          </button>
         </div>
-        
-        <button type="submit" @click="handleSubmit" :disabled="loading || !proxyOnline" class="btn btn-accent w-full">
-          <div v-if="loading" class="spinner"></div>
-          <span v-else>{{ mode === 'login' ? '登录' : '重置密码' }}</span>
-        </button>
-        
-        <div v-if="mode === 'reset'" class="text-center pt-1">
-          <a href="#" @click.prevent="mode = 'login'" class="t-caption text-secondary">返回登录</a>
+        <div v-if="mode === 'reset'" class="text-center mt-6">
+          <a href="#" @click.prevent="mode = 'login'" class="text-sm font-medium text-anthropic-mid-gray hover:text-anthropic-dark dark:hover:text-anthropic-light transition-colors">返回登录</a>
         </div>
-        
-      </div>
-      
-      <p class="t-caption mt-10 animate-fade-in" style="animation-delay: 200ms; color: var(--fg-quaternary)">成都信息工程大学</p>
-      
+      </form>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, inject, onMounted, watch } from 'vue';
+import { ref, inject, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import AppHeader from '@/components/layout/AppHeader.vue';
 import { api } from '@/sdk/app';
 import { useDataStore } from '@/composables/useDataStore';
 
 const rootShowMessage = inject('showMessage', null);
 const { userInfo, fetchUserData, rememberLogin, savedPhone } = useDataStore();
 const router = useRouter();
+const appHeaderRef = ref(null);
 
 const mode = ref('login');
 const phone = ref('');
@@ -107,38 +159,204 @@ const rememberMe = ref(!!rememberLogin.value);
 const loading = ref(false);
 const sending = ref(false);
 const proxyOnline = ref(false);
+const keyboardInset = ref(0);
+const viewportBaseHeight = ref(0);
+let keyboardWasVisible = false;
+let keyboardMeasureTimer = 0;
 
+// 检查代理服务器状态
 async function checkProxyStatus() {
-  try { const r = await fetch('/devproxy/health'); const d = await r.json(); proxyOnline.value = d.status === 'ok'; }
-  catch { proxyOnline.value = false; }
+  try {
+    const resp = await fetch('/devproxy/health');
+    const data = await resp.json();
+    proxyOnline.value = data.status === 'ok';
+  } catch (e) {
+    proxyOnline.value = false;
+  }
 }
-function msg(m, t) { if (typeof rootShowMessage === 'function') rootShowMessage(m, t); }
 
-onMounted(() => { if (rememberMe.value) phone.value = savedPhone.value || ''; checkProxyStatus(); setInterval(checkProxyStatus, 30000); });
-watch(rememberMe, v => { rememberLogin.value = !!v; if (!v) savedPhone.value = ''; });
+function showMessage(message, type = 'info') {
+  if (appHeaderRef.value?.show) {
+    appHeaderRef.value.show(message, type);
+    return;
+  }
+
+  if (typeof rootShowMessage === 'function') {
+    rootShowMessage(message, type);
+  }
+}
+
+function restoreViewportPosition() {
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+}
+
+function getViewportBaseHeight() {
+  const cssHeight = Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--app-vh'),
+  );
+  if (Number.isFinite(cssHeight) && cssHeight > 0) return cssHeight;
+  return window.innerHeight || document.documentElement?.clientHeight || 0;
+}
+
+function syncViewportBaseHeight() {
+  viewportBaseHeight.value = getViewportBaseHeight();
+}
+
+function measureKeyboardInset() {
+  const viewport = window.visualViewport;
+  const layoutHeight = viewportBaseHeight.value || getViewportBaseHeight();
+  const visibleHeight = Math.max(0, viewport?.height || layoutHeight);
+  const offsetTop = Math.max(0, viewport?.offsetTop || 0);
+  const inset = Math.max(0, layoutHeight - (visibleHeight + offsetTop));
+  keyboardInset.value = inset;
+
+  if (keyboardWasVisible && inset <= 0) {
+    restoreViewportPosition();
+  }
+  keyboardWasVisible = inset > 0;
+}
+
+function scheduleKeyboardMeasure() {
+  if (keyboardMeasureTimer) clearTimeout(keyboardMeasureTimer);
+  keyboardMeasureTimer = window.setTimeout(() => {
+    syncViewportBaseHeight();
+    measureKeyboardInset();
+    keyboardMeasureTimer = 0;
+  }, 60);
+}
+
+function handleInputBlur() {
+  window.setTimeout(() => {
+    syncViewportBaseHeight();
+    measureKeyboardInset();
+    if (keyboardInset.value <= 0) {
+      restoreViewportPosition();
+    }
+  }, 120);
+}
+
+onMounted(() => {
+  if (rememberMe.value) {
+    phone.value = savedPhone.value || '';
+  }
+  syncViewportBaseHeight();
+  measureKeyboardInset();
+  checkProxyStatus();
+  // 每30秒检查一次代理状态
+  const proxyCheckTimer = setInterval(checkProxyStatus, 30000);
+  window.addEventListener('resize', scheduleKeyboardMeasure);
+  window.addEventListener('orientationchange', scheduleKeyboardMeasure);
+  window.visualViewport?.addEventListener('resize', scheduleKeyboardMeasure);
+  window.visualViewport?.addEventListener('scroll', scheduleKeyboardMeasure);
+});
+
+onUnmounted(() => {
+  if (keyboardMeasureTimer) {
+    clearTimeout(keyboardMeasureTimer);
+    keyboardMeasureTimer = 0;
+  }
+  window.removeEventListener('resize', scheduleKeyboardMeasure);
+  window.removeEventListener('orientationchange', scheduleKeyboardMeasure);
+  window.visualViewport?.removeEventListener('resize', scheduleKeyboardMeasure);
+  window.visualViewport?.removeEventListener('scroll', scheduleKeyboardMeasure);
+});
+
+watch(rememberMe, (val) => {
+  rememberLogin.value = !!val;
+
+  if (!val) {
+    savedPhone.value = '';
+  }
+});
 
 const sendCode = async () => {
-  if (!phone.value) { msg('请输入手机号', 'error'); return; }
+  if (!phone.value) {
+    showMessage('请输入手机号', 'error');
+    return;
+  }
   sending.value = true;
-  try { const { data } = await api.sendVerifyCode(phone.value); msg(data.code === 10000 ? '验证码已发送' : data.msg || '发送失败', data.code === 10000 ? 'success' : 'error'); }
-  catch { msg('发送异常', 'error'); } finally { sending.value = false; }
+  try {
+    const { data } = await api.sendVerifyCode(phone.value);
+    if (data.code === 10000) {
+      showMessage('验证码已发送', 'success');
+    } else {
+      showMessage(data.msg || '发送失败', 'error');
+    }
+  } catch (e) {
+    showMessage('发送异常', 'error');
+  } finally {
+    sending.value = false;
+  }
 };
 
 const handleLogin = async () => {
   loading.value = true;
   try {
     const { data } = await api.login(phone.value, password.value);
-    if (data.code === 10000) { if (rememberMe.value) savedPhone.value = phone.value; else savedPhone.value = ''; userInfo.value = data.response; try { await fetchUserData(); } catch {} router.replace({ name: 'home' }).catch(() => {}); }
-    else msg(data.msg, 'error');
-  } catch { msg('登录失败', 'error'); } finally { loading.value = false; }
+    if (data.code === 10000) {
+      if (rememberMe.value) {
+        savedPhone.value = phone.value;
+      } else {
+        savedPhone.value = '';
+      }
+      userInfo.value = data.response;
+      try {
+        await fetchUserData();
+      } catch (e) {}
+      router.replace({ name: 'home' }).catch(() => {});
+    } else {
+      showMessage(data.msg, 'error');
+    }
+  } catch (e) {
+    console.error(e);
+    showMessage('登录失败', 'error');
+  } finally {
+    loading.value = false;
+  }
 };
 
 const handleReset = async () => {
-  if (!code.value) { msg('请输入验证码', 'error'); return; }
+  if (!code.value) {
+    showMessage('请输入验证码', 'error');
+    return;
+  }
   loading.value = true;
-  try { const { data } = await api.updatePassword(phone.value, password.value, code.value); if (data.code === 10000) { msg('密码重置成功', 'success'); phone.value = ''; password.value = ''; code.value = ''; mode.value = 'login'; } else msg(data.msg || '重置失败', 'error'); }
-  catch { msg('重置异常', 'error'); } finally { loading.value = false; }
+  try {
+    const { data } = await api.updatePassword(phone.value, password.value, code.value);
+    if (data.code === 10000) {
+      showMessage('密码重置成功，请登录', 'success');
+      phone.value = '';
+      password.value = '';
+      code.value = '';
+      mode.value = 'login';
+    } else {
+      showMessage(data.msg || '重置失败', 'error');
+    }
+  } catch (e) {
+    showMessage('重置异常', 'error');
+  } finally {
+    loading.value = false;
+  }
 };
 
-const handleSubmit = () => { mode.value === 'login' ? handleLogin() : handleReset(); };
+const handleSubmit = () => {
+  if (mode.value === 'login') {
+    handleLogin();
+  } else {
+    handleReset();
+  }
+};
 </script>
+
+<style scoped>
+.auth-remember-box {
+  border-color: var(--card-divider);
+}
+
+.auth-remember-box.is-checked {
+  background-color: var(--button-primary-bg);
+  border-color: var(--button-primary-bg);
+}
+</style>
