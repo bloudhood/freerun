@@ -2,78 +2,101 @@
   <div>
     <header
       ref="headerRef"
-      class="fixed top-2 left-0 right-0 z-999 flex justify-center pointer-events-none transition-all duration-300"
+      class="fixed top-3 left-0 right-0 z-[999] flex justify-center pointer-events-none"
     >
       <div
-        :class="[
-          'flex items-center h-10 max-w-[480px] w-[calc(100%_-_24px)] backdrop-blur-2xl border rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.1)] pointer-events-auto transition-all duration-300 overflow-hidden',
-          'theme-card',
-          messageVisible ? messageStyles[messageType].shell : '',
-          props.notifyOnly && !messageVisible
-            ? 'opacity-0 scale-95 pointer-events-none !border-transparent !shadow-none !bg-transparent'
-            : '',
-        ]"
+        class="glass rounded-2xl max-w-[400px] w-[calc(100%-32px)] pointer-events-auto overflow-hidden"
+        :class="{
+          'opacity-0 scale-95 pointer-events-none': props.notifyOnly && !messageVisible
+        }"
+        :style="{
+          background: messageVisible ? messageStyles[messageType].bg : undefined,
+          borderColor: messageVisible ? messageStyles[messageType].border : undefined,
+          transition: 'all 0.25s var(--ease-default)'
+        }"
       >
         <transition
           mode="out-in"
-          enter-active-class="transition-all duration-220 ease-out"
+          enter-active-class="transition-all duration-200 ease-out"
           enter-from-class="opacity-0 scale-95"
           enter-to-class="opacity-100 scale-100"
-          leave-active-class="transition-all duration-180 ease-in"
+          leave-active-class="transition-all duration-150 ease-in"
           leave-from-class="opacity-100 scale-100"
           leave-to-class="opacity-0 scale-95"
         >
-          <div v-if="messageVisible" key="message" class="flex items-center w-full px-4 gap-2.5">
-            <i :class="['text-[14px] shrink-0', messageStyles[messageType].icon]"></i>
-            <span :class="['text-[13px] leading-5 truncate', messageStyles[messageType].text]">
+          <!-- Message -->
+          <div v-if="messageVisible" key="message" class="flex items-center w-full px-4 py-3 gap-3">
+            <svg class="w-5 h-5 shrink-0" :style="{ color: messageStyles[messageType].iconColor }" 
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle v-if="messageType === 'success'" cx="12" cy="12" r="10"/>
+              <polyline v-if="messageType === 'success'" points="16 12 12 8 8 12"/>
+              <line v-if="messageType === 'success'" x1="12" y1="16" x2="12" y2="8"/>
+              
+              <circle v-if="messageType === 'error'" cx="12" cy="12" r="10"/>
+              <line v-if="messageType === 'error'" x1="15" y1="9" x2="9" y2="15"/>
+              <line v-if="messageType === 'error'" x1="9" y1="9" x2="15" y2="15"/>
+              
+              <circle v-if="messageType === 'info'" cx="12" cy="12" r="10"/>
+              <line v-if="messageType === 'info'" x1="12" y1="16" x2="12" y2="12"/>
+              <line v-if="messageType === 'info'" x1="12" y1="8" x2="12.01" y2="8"/>
+              
+              <path v-if="messageType === 'warning'" d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line v-if="messageType === 'warning'" x1="12" y1="9" x2="12" y2="13"/>
+              <line v-if="messageType === 'warning'" x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span class="text-callout" :style="{ color: messageStyles[messageType].textColor }">
               {{ messageContent }}
             </span>
           </div>
 
-          <div v-else-if="!props.notifyOnly" key="default" class="flex items-center w-full h-full">
+          <!-- Default -->
+          <div v-else-if="!props.notifyOnly" key="default" class="flex items-center w-full h-12 px-4">
             <slot name="content">
-              <div
-                class="flex items-center flex-1 min-w-0 h-6 pl-4 pr-2 overflow-hidden ml-auto mr-3 shrink-0 gap-3 pointer-events-auto"
-              >
-                <div
-                  class="welcome-sequence"
-                  :class="isDark ? 'welcome-sequence--dark' : 'welcome-sequence--light'"
-                >
-                  <div
-                    class="welcome-sequence-logo h-5 w-5 flex items-center justify-center"
-                    :class="{ 'is-visible': welcomePhase !== 'text' }"
-                  >
-                    <img
-                      src="/logo.png"
-                      alt="App Logo"
-                      class="max-h-full max-w-full object-contain"
-                    />
-                  </div>
-
-                  <span
-                    class="welcome-sequence-text"
-                    :class="{ 'is-visible': welcomePhase === 'text' }"
-                  >
+              <!-- Welcome Text -->
+              <div class="flex-1 min-w-0">
+                <transition mode="out-in" name="welcome-fade">
+                  <span v-if="welcomePhase === 'text'" key="text" class="text-callout font-medium truncate block"
+                        style="color: var(--text-primary)">
                     {{ welcomeText }}
                   </span>
-                </div>
+                  <div v-else key="logo" class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-lg flex items-center justify-center"
+                         style="background: linear-gradient(135deg, var(--accent) 0%, #ff8f65 100%)">
+                      <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                      </svg>
+                    </div>
+                    <span class="text-callout font-medium" style="color: var(--text-primary)">Byerun</span>
+                  </div>
+                </transition>
               </div>
 
-              <div class="flex items-center ml-auto mr-3 shrink-0 gap-3 pointer-events-auto">
-                <button
-                  type="button"
-                  class="inline-flex items-center justify-center h-6 w-6 transition-colors rounded-md header-action-btn"
-                  :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
-                  @click="themeStore.toggle()"
-                >
-                  <i v-if="isDark" class="ri-sun-fill text-[17px]"></i>
-                  <i v-else class="ri-moon-clear-fill text-[17px]"></i>
-                </button>
-              </div>
+              <!-- Theme Toggle -->
+              <button
+                type="button"
+                class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                style="color: var(--text-tertiary)"
+                @click="themeStore.toggle()"
+              >
+                <svg v-if="isDark" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="12" cy="12" r="5"/>
+                  <line x1="12" y1="1" x2="12" y2="3"/>
+                  <line x1="12" y1="21" x2="12" y2="23"/>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                  <line x1="1" y1="12" x2="3" y2="12"/>
+                  <line x1="21" y1="12" x2="23" y2="12"/>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+                <svg v-else class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+              </button>
             </slot>
           </div>
 
-          <div v-else key="notify-placeholder" class="w-full h-full"></div>
+          <div v-else key="notify-placeholder" class="w-full h-12"></div>
         </transition>
       </div>
     </header>
@@ -110,24 +133,28 @@ const messageType = ref('info');
 
 const messageStyles = {
   success: {
-    shell: '!bg-emerald-600 !border-emerald-500',
-    icon: 'ri-checkbox-circle-fill text-black dark:text-white',
-    text: 'text-black dark:text-white',
+    bg: 'rgba(52, 199, 89, 0.12)',
+    border: 'rgba(52, 199, 89, 0.3)',
+    iconColor: 'var(--success)',
+    textColor: 'var(--text-primary)',
   },
   error: {
-    shell: '!bg-rose-600 !border-rose-500',
-    icon: 'ri-error-warning-fill text-black dark:text-white',
-    text: 'text-black dark:text-white',
+    bg: 'rgba(255, 59, 48, 0.12)',
+    border: 'rgba(255, 59, 48, 0.3)',
+    iconColor: 'var(--destructive)',
+    textColor: 'var(--text-primary)',
   },
   info: {
-    shell: '!bg-blue-600 !border-blue-500',
-    icon: 'ri-information-fill text-black dark:text-white',
-    text: 'text-black dark:text-white',
+    bg: 'rgba(0, 122, 255, 0.12)',
+    border: 'rgba(0, 122, 255, 0.3)',
+    iconColor: 'var(--info)',
+    textColor: 'var(--text-primary)',
   },
   warning: {
-    shell: '!bg-amber-600 !border-amber-500',
-    icon: 'ri-alert-fill text-black dark:text-white',
-    text: 'text-black dark:text-white',
+    bg: 'rgba(255, 159, 10, 0.12)',
+    border: 'rgba(255, 159, 10, 0.3)',
+    iconColor: 'var(--warning)',
+    textColor: 'var(--text-primary)',
   },
 };
 
@@ -142,26 +169,14 @@ const displayName = computed(() => {
 const welcomeText = computed(() => `Hi，${displayName.value}`);
 
 const clearSequenceTimers = () => {
-  while (timers.length) {
-    clearTimeout(timers.pop());
-  }
+  while (timers.length) clearTimeout(timers.pop());
 };
 
 const startWelcomeSequence = () => {
   clearSequenceTimers();
   welcomePhase.value = 'logo';
-
-  timers.push(
-    setTimeout(() => {
-      welcomePhase.value = 'text';
-    }, 620),
-  );
-
-  timers.push(
-    setTimeout(() => {
-      welcomePhase.value = 'logo';
-    }, 4000),
-  );
+  timers.push(setTimeout(() => { welcomePhase.value = 'text'; }, 620));
+  timers.push(setTimeout(() => { welcomePhase.value = 'logo'; }, 4000));
 };
 
 watch(
@@ -172,7 +187,7 @@ watch(
       startWelcomeSequence();
     }
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 const handleLogout = async () => {
@@ -184,17 +199,12 @@ const handleLogout = async () => {
   if (confirmed) {
     const instance = getCurrentInstance();
     const hasListener = !!(
-      instance &&
-      instance.vnode &&
-      instance.vnode.props &&
-      (instance.vnode.props.onLogout || instance.vnode.props.onLogout === '')
+      instance?.vnode?.props?.onLogout || instance?.vnode?.props?.onLogout === ''
     );
     if (hasListener) {
       emit('logout');
     } else {
-      try {
-        clearAllData();
-      } catch (e) {}
+      try { clearAllData(); } catch (e) {}
       window.location.reload();
     }
   }
@@ -210,9 +220,7 @@ const show = (message, type = 'info') => {
   messageVisible.value = true;
 
   if (messageTimer) clearTimeout(messageTimer);
-  messageTimer = setTimeout(() => {
-    messageVisible.value = false;
-  }, 3000);
+  messageTimer = setTimeout(() => { messageVisible.value = false; }, 3000);
 };
 
 const getHeaderElement = () => headerRef.value;
@@ -222,85 +230,22 @@ onUnmounted(() => {
   if (messageTimer) clearTimeout(messageTimer);
 });
 
-defineExpose({
-  show,
-  getHeaderElement,
-});
+defineExpose({ show, getHeaderElement });
 </script>
 
 <style scoped>
-.welcome-sequence {
-  position: relative;
-  width: 100%;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  --welcome-logo-filter-hidden: brightness(0) saturate(100%) invert(22%) sepia(10%) saturate(341%)
-    hue-rotate(181deg) brightness(92%) contrast(89%) blur(5px);
-  --welcome-logo-filter-visible: brightness(0) saturate(100%) invert(22%) sepia(10%) saturate(341%)
-    hue-rotate(181deg) brightness(92%) contrast(89%) blur(0);
-  --welcome-logo-opacity-visible: 0.82;
-  --welcome-text-color: #4b5563;
+.welcome-fade-enter-active,
+.welcome-fade-leave-active {
+  transition: all 0.3s var(--ease-default);
 }
 
-.welcome-sequence--dark {
-  --welcome-logo-filter-hidden: brightness(0) saturate(100%) invert(92%) sepia(6%) saturate(222%)
-    hue-rotate(182deg) brightness(97%) contrast(93%) blur(5px);
-  --welcome-logo-filter-visible: brightness(0) saturate(100%) invert(92%) sepia(6%) saturate(222%)
-    hue-rotate(182deg) brightness(97%) contrast(93%) blur(0);
-  --welcome-logo-opacity-visible: 0.72;
-  --welcome-text-color: #979797;
-}
-
-.welcome-sequence-logo,
-.welcome-sequence-text {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%) scale(0.86);
+.welcome-fade-enter-from {
   opacity: 0;
-  filter: blur(5px);
-  transition:
-    opacity 300ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
-    filter 300ms cubic-bezier(0.22, 1, 0.36, 1),
-    color 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(4px);
 }
 
-.welcome-sequence-logo {
+.welcome-fade-leave-to {
   opacity: 0;
-  filter: var(--welcome-logo-filter-hidden);
-}
-
-.welcome-sequence-text {
-  max-width: 100%;
-  padding-right: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--welcome-text-color);
-}
-
-.welcome-sequence-logo.is-visible {
-  transform: translateY(-50%) scale(1);
-  opacity: var(--welcome-logo-opacity-visible);
-  filter: var(--welcome-logo-filter-visible);
-}
-
-.welcome-sequence-text.is-visible {
-  transform: translateY(-50%) scale(1);
-  opacity: 1;
-  filter: blur(0);
-}
-
-.header-action-btn {
-  color: var(--text-tertiary);
-}
-
-.header-action-btn:hover {
-  color: var(--text-primary);
-  background-color: var(--action-hover-bg);
+  transform: translateY(-4px);
 }
 </style>
