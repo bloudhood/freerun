@@ -185,10 +185,6 @@ npm run build
 
 本项目改自 byrun，针对新版 Unirun 服务器形式做了接口、代理和自动任务兼容调整。目前支持并验证的学校是 CUIT。
 
-## 致谢
-
-[@msojocs/AutoRun](https://github.com/msojocs/AutoRun)
-
 ## 许可
 
 基于 [CC BY-NC License, Version 4.0](https://creativecommons.org/licenses/by-nc/4.0/) 发布。
