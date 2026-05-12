@@ -118,6 +118,7 @@ export class AppApiClient {
     appVersion,
     appKey,
     appSecret,
+    proxyToken = '',
     tokenProvider = () => '',
     onAuthFailure = () => {},
     onRequestStart = () => {},
@@ -127,6 +128,7 @@ export class AppApiClient {
     this.appVersion = appVersion;
     this.appKey = appKey;
     this.appSecret = appSecret;
+    this.proxyToken = proxyToken;
     this.tokenProvider = tokenProvider;
     this.onAuthFailure = onAuthFailure;
     this.onRequestStart = onRequestStart;
@@ -141,6 +143,9 @@ export class AppApiClient {
         'Content-Type': 'application/json',
       },
     });
+    if (this.proxyToken) {
+      this.http.defaults.headers.common['X-Proxy-Token'] = this.proxyToken;
+    }
 
     this.http.interceptors.request.use(
       (config) => {

@@ -1,5 +1,5 @@
 /**
- * Byerun Autorun Server - 校园跑定时自动打卡服务
+ * Freerun Autorun Server - 校园跑定时自动打卡服务
  *
  * 功能：
  * - 提供前端所需的全部 API 接口
@@ -15,18 +15,41 @@ const cron = require('node-cron');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const {
+  normalizeTarget,
+  registerClubRoutes,
+  runDueClubAutoTasks,
+} = require('./club');
+const {
+  hydrateTasksFromDisk,
+  maskToken,
+  serializeTasksForDisk,
+} = require('./token-store');
+const {
+  buildCorsHeaders,
+  isOriginAllowed,
+  parseAllowList,
+} = require('../lib/proxy-policy');
+
+loadDotEnv(path.join(__dirname, '.env'));
+const AUTORUN_ORIGIN_ALLOWLIST = parseAllowList(process.env.ORIGIN_ALLOWLIST || process.env.AUTORUN_ORIGIN_ALLOWLIST || '');
 
 // ──────────────────────────────────────────────
 //  1. 应用初始化
 // ──────────────────────────────────────────────
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: process.env.REQUEST_BODY_LIMIT || '1mb' }));
 
 // CORS
 app.use((req, res, next) => {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Headers', '*');
-  res.set('Access-Control-Allow-Methods', '*');
+  const corsHeaders = buildCorsHeaders({
+    origin: req.headers.origin,
+    originAllowList: AUTORUN_ORIGIN_ALLOWLIST,
+  });
+  res.set(corsHeaders);
+  if (!isOriginAllowed(req.headers.origin, AUTORUN_ORIGIN_ALLOWLIST)) {
+    return res.status(403).json({ success: false, message: 'Origin is not allowed' });
+  }
   if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
 });
@@ -36,17 +59,35 @@ app.use((req, res, next) => {
 // ──────────────────────────────────────────────
 const CONFIG = {
   port: process.env.PORT || 5891,
-  // Unirun API 上游地址（勿修改）
-  upstream: 'https://run-lb.tanmasports.com/v1',
+  // Unirun API upstream.
+  upstream: normalizeTarget(process.env.UNIRUN_TARGET || 'https://run-lb.tanmasports.com/v1'),
   // App 签名密钥（与前端保持一致，从源码中提取）
   appKey: process.env.APP_KEY || '389885588s0648fa',
   appSecret: process.env.APP_SECRET || '56E39A1658455588885690425C0FD16055A21676',
   appVersion: '3.6.8',
   // 数据持久化文件路径
   dataFile: path.join(__dirname, 'tasks.json'),
+  taskSecret: process.env.TASK_SECRET || '',
   // 地图文件目录（从项目 app/src/assets/maps 复制过来）
   mapsDir: path.join(__dirname, 'maps'),
 };
+
+function loadDotEnv(filePath) {
+  if (!fs.existsSync(filePath)) return;
+
+  const lines = fs.readFileSync(filePath, 'utf8').split(/\r?\n/);
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+
+    const index = trimmed.indexOf('=');
+    if (index <= 0) return;
+
+    const key = trimmed.slice(0, index).trim();
+    const value = trimmed.slice(index + 1).trim().replace(/^['"]|['"]$/g, '');
+    if (!process.env[key]) process.env[key] = value;
+  });
+}
 
 // ──────────────────────────────────────────────
 //  3. 数据持久化（JSON 文件）
@@ -59,7 +100,7 @@ function loadTasks() {
   try {
     if (fs.existsSync(CONFIG.dataFile)) {
       const raw = fs.readFileSync(CONFIG.dataFile, 'utf8');
-      tasks = JSON.parse(raw) || {};
+      tasks = hydrateTasksFromDisk(JSON.parse(raw) || {}, CONFIG.taskSecret);
       console.log(`[data] 已加载 ${Object.keys(tasks).length} 个任务`);
     }
   } catch (e) {
@@ -70,7 +111,8 @@ function loadTasks() {
 
 function saveTasks() {
   try {
-    fs.writeFileSync(CONFIG.dataFile, JSON.stringify(tasks, null, 2), 'utf8');
+    const payload = serializeTasksForDisk(tasks, CONFIG.taskSecret);
+    fs.writeFileSync(CONFIG.dataFile, JSON.stringify(payload, null, 2), 'utf8');
   } catch (e) {
     console.error('[data] 保存任务失败:', e.message);
   }
@@ -537,7 +579,7 @@ app.post('/api/register', (req, res) => {
   });
   saveTasks();
 
-  console.log(`[register] 更新任务 token=${token.slice(0, 8)} map=${map_id} cron=${cronExpr} enabled=${enabled}`);
+  console.log(`[register] 更新任务 token=${maskToken(token)} map=${map_id} cron=${cronExpr} enabled=${enabled}`);
   res.json({ success: true, data: tasks[token] });
 });
 
@@ -595,7 +637,7 @@ cron.schedule('* * * * *', async () => {
 
   for (const token of pendingTokens) {
     const task = tasks[token];
-    console.log(`[cron] 触发任务 token=${token.slice(0, 8)}... map_id=${task.map_id}`);
+    console.log(`[cron] 触发任务 token=${maskToken(token)}... map_id=${task.map_id}`);
     try {
       const result = await executeRun(token, task);
       task.last_run_at = now.toISOString();
@@ -603,9 +645,16 @@ cron.schedule('* * * * *', async () => {
       saveTasks();
       console.log(`[cron] ✅ 打卡成功: distance=${result.runDistance}m time=${result.runTime}min desc=${result.resultDesc}`);
     } catch (err) {
-      console.error(`[cron] ❌ 打卡失败 token=${token.slice(0, 8)}: ${err.message}`);
+      console.error(`[cron] ❌ 打卡失败 token=${maskToken(token)}: ${err.message}`);
     }
   }
+
+  await runDueClubAutoTasks({
+    tasks,
+    saveTasks,
+    getUserInfo,
+    unirunRequest,
+  });
 });
 
 // ──────────────────────────────────────────────
@@ -613,10 +662,19 @@ cron.schedule('* * * * *', async () => {
 // ──────────────────────────────────────────────
 loadTasks();
 loadMaps();
+if (!CONFIG.taskSecret) {
+  console.warn('[data] TASK_SECRET 未配置，tasks.json 将沿用明文兼容格式；公开或多用户部署请配置 TASK_SECRET。');
+}
+registerClubRoutes(app, {
+  tasks,
+  saveTasks,
+  getUserInfo,
+  unirunRequest,
+});
 
 app.listen(CONFIG.port, () => {
   console.log('\n============================================');
-  console.log(`🚀 Byerun Autorun Server 已启动`);
+  console.log(`🚀 Freerun Autorun Server 已启动`);
   console.log(`   监听地址: http://0.0.0.0:${CONFIG.port}`);
   console.log(`   地图目录: ${CONFIG.mapsDir}`);
   console.log(`   数据文件: ${CONFIG.dataFile}`);

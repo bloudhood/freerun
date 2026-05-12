@@ -11,7 +11,7 @@
           <i class="ri-leaf-line text-2xl text-anthropic-orange"></i>
         </div>
         <h1 class="text-2xl font-heading font-medium text-anthropic-dark dark:text-anthropic-light tracking-tight mb-2">
-          Byerun Web
+          Freerun Web
         </h1>
       </div>
       <form @submit.prevent="handleSubmit" @focusout="handleInputBlur" class="space-y-5">
@@ -116,7 +116,7 @@
               <i :class="proxyOnline ? 'ri-checkbox-circle-fill' : 'ri-close-circle-fill'"></i>
             </span>
             <span class="theme-text-secondary">
-              {{ proxyOnline ? '代理服务器在线' : '代理服务器离线' }}
+              {{ proxyOnline ? '接口服务可用' : '接口服务不可用' }}
             </span>
           </div>
           <button
@@ -143,7 +143,7 @@
 import { ref, inject, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import AppHeader from '@/components/layout/AppHeader.vue';
-import { api } from '@/sdk/app';
+import { api, appConfig } from '@/sdk/app';
 import { useDataStore } from '@/composables/useDataStore';
 
 const rootShowMessage = inject('showMessage', null);
@@ -166,8 +166,13 @@ let keyboardMeasureTimer = 0;
 
 // 检查代理服务器状态
 async function checkProxyStatus() {
+  if (!appConfig.api.healthUrl) {
+    proxyOnline.value = true;
+    return;
+  }
+
   try {
-    const resp = await fetch('/devproxy/health');
+    const resp = await fetch(appConfig.api.healthUrl);
     const data = await resp.json();
     proxyOnline.value = data.status === 'ok';
   } catch (e) {

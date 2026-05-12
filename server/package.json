@@ -1,10 +1,11 @@
 {
-	"name": "byerun-server",
+	"name": "freerun-server",
 	"version": "1.0.0",
 	"main": "index.js",
 	"scripts": {
-		"start": "npm install && node index.js",
-		"test": "echo \"Error: no test specified\" && exit 1",
+		"start": "node index.js",
+		"dev": "node index.js",
+		"test": "node --test test/*.test.js",
 		"vercel-build": "echo 'Vercel build completed'"
 	},
 	"keywords": [],
@@ -13,9 +14,7 @@
 	"description": "",
 	"dependencies": {
 		"express": "^4.21.1",
-		"node-fetch": "^3.3.2"
-	},
-	"devDependencies": {
+		"node-fetch": "^3.3.2",
 		"morgan": "^1.10.0",
 		"winston": "^3.17.0"
 	}

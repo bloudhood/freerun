@@ -1,12 +1,12 @@
-# byerun-web 与新版 UNIRUN APK 差异分析
+# Freerun 与新版 UNIRUN APK 差异分析
 
 ## 问题定位
 
-byerun-web 项目用不了的核心原因：
+Freerun 项目用不了的核心原因：
 
 ### 1. 登录 Body 字段名变更 ❌ [关键]
 
-**老版本 byerun-web** (`app/src/sdk/app/client.js` 第194行):
+**老版本 Freerun** (`app/src/sdk/app/client.js` 第194行):
 ```javascript
 appVersion: this.appVersion,   // 单数
 sysVersion: device.sysVersion, // 单数
@@ -150,7 +150,7 @@ const body = {
 
 ## 新增功能 (可选)
 
-新版 APK 增加了以下功能，byerun-web 可以考虑支持:
+新版 APK 增加了以下功能，Freerun 可以考虑支持:
 
 ### 1. realityTrackPoints 字段
 

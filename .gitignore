@@ -30,5 +30,10 @@ dist-ssr
 
 __pycache__/
 
+# Local operator state / generated tooling
+.tools/
+.playwright-mcp/
+.wrangler/
+
 # Autorun persistent data
 tasks.json

@@ -1,12 +1,13 @@
 {
-  "name": "byerun-autorun-server",
+  "name": "freerun-autorun-server",
   "version": "1.0.0",
-  "description": "Byerun 校园跑自动打卡定时任务服务",
+  "description": "Freerun 校园跑自动打卡定时任务服务",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "pm2": "pm2 start server.js --name byerun-autorun"
+    "pm2": "pm2 start server.js --name freerun-autorun",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "express": "^4.21.1",

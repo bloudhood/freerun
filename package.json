@@ -1,0 +1,17 @@
+{
+  "name": "freerun",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Freerun web client and proxy services",
+  "scripts": {
+    "setup": "npm --prefix app install && npm --prefix server install && npm --prefix autorun-local install",
+    "dev": "npm --prefix app run dev",
+    "build": "npm --prefix app run build",
+    "test": "npm --prefix autorun-local test && npm --prefix server test",
+    "audit": "npm --prefix app audit --omit=dev && npm --prefix server audit --omit=dev && npm --prefix autorun-local audit --omit=dev",
+    "check": "npm run test && npm run build && git diff --check",
+    "local-proxy": "npm --prefix local-proxy start",
+    "server": "npm --prefix server start",
+    "autorun": "npm --prefix autorun-local start"
+  }
+}

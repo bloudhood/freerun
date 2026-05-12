@@ -121,30 +121,18 @@ export function useStickerCache(options = {}) {
   let silentRefreshTriggered = false;
 
   const getStoredCache = () => {
-    console.log(
-      '[Sticker] getStoredCache called, getChatStickerCache:',
-      typeof getChatStickerCache,
-    );
     const raw = getChatStickerCache?.();
-    console.log('[Sticker] raw cache from store:', raw);
     return normalizeStickerCache(raw);
   };
 
   const persistCache = (payload) => {
     const normalized = normalizeStickerCache(payload);
     if (!normalized) return;
-    console.log('[Sticker] persistCache, groups:', Object.keys(normalized.groups).length);
     setChatStickerCache?.(normalized);
   };
 
   function hydrateStickerCache() {
-    console.log('[Sticker] hydrateStickerCache called');
     const stored = getStoredCache();
-    console.log(
-      '[Sticker] stored cache:',
-      stored ? 'exists' : 'null',
-      stored?.groups ? Object.keys(stored.groups).length : 0,
-    );
     if (stored) {
       stickerGroups.value = stored.groups;
       stickerLoaded.value = true;

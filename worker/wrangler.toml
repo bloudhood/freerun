@@ -1,3 +1,7 @@
-name = "byerun-proxy"
+name = "freerun-proxy"
 main = "index.js"
 compatibility_date = "2024-01-01"
+
+[vars]
+UNIRUN_TARGET = "https://run-lb.tanmasports.com/v1"
+ORIGIN_ALLOWLIST = ""

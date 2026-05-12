@@ -2,11 +2,10 @@ import { ref } from 'vue';
 import { ApiBusinessError, AutorunClient } from './client';
 
 const AUTORUN_STATE_STORAGE_KEY = 'unirun.autorun_state';
+const AUTORUN_SERVER_BASE = (import.meta.env.VITE_AUTORUN_SERVER_BASE || '').trim();
 
 export const scheduledTaskConfig = {
-  apiBaseUrl: import.meta.env.DEV
-    ? '/autorunserver'
-    : import.meta.env.VITE_AUTORUN_SERVER_BASE || '',
+  apiBaseUrl: import.meta.env.DEV && AUTORUN_SERVER_BASE ? '/autorunserver' : AUTORUN_SERVER_BASE,
 };
 
 const API_BASE = (scheduledTaskConfig.apiBaseUrl || '').replace(/\/$/, '');

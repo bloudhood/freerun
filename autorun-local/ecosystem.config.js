@@ -1,6 +1,6 @@
 module.exports = {
   apps: [{
-    name: "byerun-autorun",
+    name: "freerun-autorun",
     script: "./server.js",
     watch: false,
     env: {

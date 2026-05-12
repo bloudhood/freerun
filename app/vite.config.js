@@ -5,6 +5,28 @@ import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
+  const unirunTarget = (env.VITE_UNIRUN_API_BASE || 'https://run-lb.tanmasports.com/v1').replace(
+    /\/+$/,
+    '',
+  );
+  const autorunTarget = (env.VITE_AUTORUN_SERVER_BASE || '').replace(/\/+$/, '');
+  const proxy = {
+    '/devproxy': {
+      target: unirunTarget,
+      secure: false,
+      changeOrigin: true,
+      rewrite: (path) => path.replace(/^\/devproxy/, ''),
+    },
+  };
+
+  if (autorunTarget) {
+    proxy['/autorunserver'] = {
+      target: autorunTarget,
+      changeOrigin: true,
+      secure: false,
+      rewrite: (path) => path.replace(/^\/autorunserver/, ''),
+    };
+  }
 
   return {
     plugins: [tailwindcss(), vue()],
@@ -58,20 +80,7 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       allowedHosts: 'all',
       cors: true,
-      proxy: {
-        '/devproxy': {
-          target: 'https://run-lb.tanmasports.com/v1',
-          secure: false,
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/devproxy/, ''),
-        },
-        '/autorunserver': {
-          target: env.VITE_AUTORUN_SERVER_BASE,
-          changeOrigin: true,
-          secure: false,
-          rewrite: (path) => path.replace(/^\/autorunserver/, ''),
-        },
-      },
+      proxy,
     },
   };
 });

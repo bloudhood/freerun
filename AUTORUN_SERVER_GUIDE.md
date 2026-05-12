@@ -1,4 +1,4 @@
-# Byerun 独立全自动打卡服务 (Autorun) 使用指南
+# Freerun 独立全自动打卡服务 (Autorun) 使用指南
 
 本指南将教你如何使用 `autorun-local` 独立服务架构，在云服务器（VPS）上实现 24 小时无人值守的全自动定时打卡功能。
 
@@ -32,9 +32,24 @@ npm install pm2 -g
 
 ### 2. (可选) 添加新的校园地图数据
 项目已经在 `autorun-local/maps/` 目录下内置了目前已有的地图文件（以 `.json` 结尾）。后台服务在启动时会自动读取这些内置地图用于轨迹生成，因此 **无需手动创建和迁移**。
-当然，如果将来你需要支持你所属的新学校，只要把做好的地图 JSON 文件放在该目录下，随后重启执行一次 `pm2 restart byerun-autorun` 即可被系统加载。
+当然，如果将来你需要支持你所属的新学校，只要把做好的地图 JSON 文件放在该目录下，随后重启执行一次 `pm2 restart freerun-autorun` 即可被系统加载。
 
 ### 3. 使用 PM2 启动独立后台进程
+首次部署先复制环境变量模板：
+```bash
+cp .env.example .env
+```
+
+`UNIRUN_TARGET` 控制自动任务服务访问的上游地址。如果服务部署在国外出口且无法访问新版 UNIRUN 服务器，应把服务放到国内网络，或将 `UNIRUN_TARGET` 指向可用的国内代理。
+
+公开或多用户部署必须在 `.env` 中设置 `TASK_SECRET`。设置后服务内存仍按原方式调度，但磁盘 `tasks.json` 会用 HMAC 索引和 AES-GCM 加密保存 token；未设置时会保留明文兼容格式，只适合本机单用户。
+
+```env
+TASK_SECRET=replace-with-a-random-local-secret
+AUTORUN_ORIGIN_ALLOWLIST=https://freerun.example.com,http://localhost:5173
+REQUEST_BODY_LIMIT=1mb
+```
+
 修改 `ecosystem.config.js` 后（本项目已内置标准配置），执行：
 ```bash
 # 启动持久化守护进程
@@ -46,9 +61,9 @@ pm2 save
 
 ### 常用后台运维命令
 * **查看进程健康状态**：`pm2 list` （如果 Status 是 online 代表正常运行）
-* **查看实时打卡日志**：`pm2 logs byerun-autorun` （定时任务执行时会在这里打印成功/失败流水日志）
-* **重启进程**：`pm2 restart byerun-autorun` （若更新了配置或地图文件，请重启生效）
-* **停止进程**：`pm2 stop byerun-autorun`
+* **查看实时打卡日志**：`pm2 logs freerun-autorun` （定时任务执行时会在这里打印成功/失败流水日志）
+* **重启进程**：`pm2 restart freerun-autorun` （若更新了配置或地图文件，请重启生效）
+* **停止进程**：`pm2 stop freerun-autorun`
 
 ---
 

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 
-const THEME_STORAGE_KEY = 'byerun.theme';
+const THEME_STORAGE_KEY = 'freerun.theme';
 
 function getInitialTheme() {
   if (typeof window === 'undefined') return false;
