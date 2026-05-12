@@ -111,13 +111,6 @@ VITE_AUTORUN_SERVER_BASE=https://autorun.example.com
 | `worker` | Cloudflare Worker 代理示例 |
 | `autorun-local` | 可选自动任务服务 |
 
-## 检查
-
-```bash
-npm run check
-npm run audit
-```
-
 不要提交本机运行产物：`.tools/`、`.playwright-mcp/`、`.wrangler/`、`.env`、`tasks.json`。
 
 ## 免责声明
