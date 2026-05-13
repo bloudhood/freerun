@@ -101,7 +101,7 @@ app.all('*', async (req, res) => {
     const newHeaders = {
         'Content-Type': req.headers['content-type'] || 'application/json',
         'User-Agent': 'okhttp/3.12.1',
-        Accept: req.headers.accept || 'application/json'
+        Accept: 'application/json'
     };
 
     if (req.headers.appkey) newHeaders.appKey = req.headers.appkey;

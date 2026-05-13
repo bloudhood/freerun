@@ -3,6 +3,28 @@ import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath, URL } from 'node:url';
 
+const UNIRUN_FORWARD_HEADERS_TO_STRIP = [
+  'origin',
+  'referer',
+  'sec-ch-ua',
+  'sec-ch-ua-mobile',
+  'sec-ch-ua-platform',
+  'sec-fetch-dest',
+  'sec-fetch-mode',
+  'sec-fetch-site',
+  'sec-fetch-user',
+];
+
+function configureUnirunProxy(proxy) {
+  proxy.on('proxyReq', (proxyReq) => {
+    for (const header of UNIRUN_FORWARD_HEADERS_TO_STRIP) {
+      proxyReq.removeHeader(header);
+    }
+    proxyReq.setHeader('User-Agent', 'okhttp/3.12.1');
+    proxyReq.setHeader('Accept', 'application/json');
+  });
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
   const unirunTarget = (env.VITE_UNIRUN_API_BASE || 'https://run-lb.tanmasports.com/v1').replace(
@@ -16,6 +38,7 @@ export default defineConfig(({ mode }) => {
       secure: false,
       changeOrigin: true,
       rewrite: (path) => path.replace(/^\/devproxy/, ''),
+      configure: configureUnirunProxy,
     },
   };
 

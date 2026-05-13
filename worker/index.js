@@ -44,7 +44,7 @@ export default {
     const headers = new Headers();
     headers.set('Content-Type', request.headers.get('content-type') || 'application/json');
     headers.set('User-Agent', 'okhttp/3.12.1');
-    headers.set('Accept', request.headers.get('accept') || 'application/json');
+    headers.set('Accept', 'application/json');
 
     const appKey = request.headers.get('appkey');
     const sign = request.headers.get('sign');

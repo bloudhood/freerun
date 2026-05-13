@@ -1,10 +1,10 @@
 # Freerun
 
-校园跑 Web 客户端与代理工具。项目改自 byrun，适配新版 Unirun 服务端接口；目前验证和支持的学校是 CUIT。
+校园跑 Web 客户端与代理工具。改自 byrun，适配新版 Unirun 接口；支持 CUIT。
 
-## 本地快速使用
+## 本地使用
 
-适合只想在自己电脑上使用校园跑功能的用户。不需要部署服务器、Cloudflare、Worker 或自动任务服务。
+只想在自己电脑上用，按下面跑即可。
 
 ```bash
 git clone https://github.com/bloudhood/freerun
@@ -14,20 +14,24 @@ npm --prefix app install
 npm run dev
 ```
 
-macOS/Linux 用户把 `copy` 换成 `cp`。
+打开终端里显示的 `http://localhost:5173/`。
 
-默认配置是本地模式：
+macOS/Linux 把 `copy` 换成 `cp`。
+
+默认配置：
 
 ```env
 VITE_API_MODE=local
 VITE_UNIRUN_API_BASE=https://run-lb.tanmasports.com/v1
 ```
 
-前端会请求 `/devproxy`，由 Vite dev server 转发到 Unirun，用于避开浏览器 CORS。只要本机网络能访问 Unirun，本地模式即可使用。
+不要直接打开 `app/dist/index.html`，也不要用普通静态服务器跑构建产物。本地模式依赖 Vite 的 `/devproxy` 代理。
+
+不要把 `VITE_API_MODE=direct` 当作日常使用方式。浏览器直连 Unirun 可能被 CORS 或上游安全策略拦截。
 
 ## 网站部署
 
-前端构建：
+先构建前端：
 
 ```bash
 cd app
@@ -37,7 +41,7 @@ npm run build
 
 ### 国内域名代理
 
-适合服务器出口能访问 Unirun 的情况。
+服务器能访问 Unirun 时使用。
 
 ```bash
 cd server
@@ -53,13 +57,13 @@ VITE_API_MODE=domain
 VITE_API_BASE_URL=https://api.example.com
 ```
 
-公网部署建议在代理侧配置 `PROXY_TOKEN` 和 `ORIGIN_ALLOWLIST`。
+公开使用建议配置 `PROXY_TOKEN` 和 `ORIGIN_ALLOWLIST`。
 
 ### Cloudflare Pages + 本机代理
 
-适合 Cloudflare 等国外出口无法访问新版 Unirun，但本机国内网络可访问的情况。
+适合 Pages 出口访问不了 Unirun、但本机网络可以访问的情况。
 
-本机启动代理：
+本机代理：
 
 ```bash
 cd local-proxy
@@ -67,7 +71,7 @@ copy .env.example .env
 npm start
 ```
 
-把 `http://127.0.0.1:18923` 通过 Cloudflare Tunnel 或其它隧道暴露出去，然后在 Pages 环境变量中配置：
+用 Cloudflare Tunnel 或其它隧道暴露 `http://127.0.0.1:18923`，然后在 Pages 配置：
 
 ```env
 LOCAL_PROXY_URL=https://proxy.example.com
@@ -84,7 +88,7 @@ VITE_TUNNEL_API_BASE=/devproxy
 
 ## 可选：自动任务服务
 
-`autorun-local` 提供跑步定时任务、俱乐部自动签到/签退和俱乐部抢报接口。简单本地使用不需要它。
+`autorun-local` 用于跑步定时任务、俱乐部自动签到/签退和俱乐部抢报。普通本地使用不需要启动它。
 
 ```bash
 cd autorun-local
@@ -111,7 +115,6 @@ VITE_AUTORUN_SERVER_BASE=https://autorun.example.com
 | `worker` | Cloudflare Worker 代理示例 |
 | `autorun-local` | 可选自动任务服务 |
 
-不要提交本机运行产物：`.tools/`、`.playwright-mcp/`、`.wrangler/`、`.env`、`tasks.json`。
 
 ## 免责声明
 

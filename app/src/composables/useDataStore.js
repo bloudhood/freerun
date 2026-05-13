@@ -1,9 +1,7 @@
 import { computed, ref, watch } from 'vue';
 import { defineStore, storeToRefs } from 'pinia';
 import { api } from '@/sdk/app';
-import { setRuntimeToken } from '@/sdk/app/session';
-
-const APP_STATE_STORAGE_KEY = 'unirun.app_state';
+import { APP_STATE_STORAGE_KEY, appStateStorage, setRuntimeToken } from '@/sdk/app/session';
 
 const useAppStateStore = defineStore(
   'appState',
@@ -25,6 +23,12 @@ const useAppStateStore = defineStore(
     const userId = computed(() => userInfo.value?.userId || null);
     const studentId = computed(() => userInfo.value?.studentId || null);
     const schoolId = computed(() => userInfo.value?.schoolId || null);
+    const clearAuthData = () => {
+      userInfo.value = null;
+      runInfo.value = null;
+      runStandard.value = null;
+      activityInfo.value = null;
+    };
 
     const resolveFailureReason = (code, status) => {
       if (code === 10001 || status === 401 || status === 403) return 'auth_invalid';
@@ -77,15 +81,19 @@ const useAppStateStore = defineStore(
           }
           return { ok: true, reason: 'ok', message: '' };
         }
+
+        const reason = resolveFailureReason(userRes?.data?.code, null);
+        if (reason === 'auth_invalid') clearAuthData();
         return {
           ok: false,
-          reason: resolveFailureReason(userRes?.data?.code, null),
+          reason,
           message: userRes?.data?.msg || '登录状态校验失败',
         };
       } catch (error) {
         console.error('Fetch data failed:', error);
         const status = Number(error?.response?.status || 0);
         const reason = resolveFailureReason(null, status);
+        if (reason === 'auth_invalid') clearAuthData();
         const fallbackMessage =
           reason === 'auth_invalid' ? '登录状态已失效，请重新登录' : '用户数据加载失败';
         return {
@@ -101,10 +109,7 @@ const useAppStateStore = defineStore(
     };
 
     const clearAllData = () => {
-      userInfo.value = null;
-      runInfo.value = null;
-      runStandard.value = null;
-      activityInfo.value = null;
+      clearAuthData();
     };
 
     watch(
@@ -137,7 +142,7 @@ const useAppStateStore = defineStore(
   {
     persist: {
       key: APP_STATE_STORAGE_KEY,
-      storage: localStorage,
+      storage: appStateStorage,
       pick: [
         'userInfo',
         'runInfo',
