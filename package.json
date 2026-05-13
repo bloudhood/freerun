@@ -7,6 +7,7 @@
     "setup": "npm --prefix app install && npm --prefix server install && npm --prefix autorun-local install",
     "dev": "npm --prefix app run dev",
     "build": "npm --prefix app run build",
+    "desktop:build": "node desktop/scripts/build.mjs",
     "test": "node --test app/test/*.test.mjs && npm --prefix autorun-local test && npm --prefix server test",
     "audit": "npm --prefix app audit --omit=dev && npm --prefix server audit --omit=dev && npm --prefix autorun-local audit --omit=dev",
     "check": "npm run test && npm run build && git diff --check",

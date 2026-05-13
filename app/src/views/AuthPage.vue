@@ -2,16 +2,15 @@
   <div
     class="auth-page h-full min-h-0 w-full flex flex-col justify-center items-center relative px-4 pt-14 theme-text-primary animate-fade-in"
   >
-    <AppHeader ref="appHeaderRef" :show-github="false" />
+    <AppHeader ref="appHeaderRef" />
 
     <div class="w-full max-w-[420px] corner-apple glass-apple animate-slide-up relative z-10">
       <div class="mb-10 text-center flex flex-col items-center">
-        <!-- Logo Mark -->
-        <div class="w-14 h-14 rounded-[18px] bg-anthropic-orange/10 dark:bg-anthropic-orange/20 flex items-center justify-center mb-5 shadow-inner">
-          <i class="ri-leaf-line text-2xl text-anthropic-orange"></i>
+        <div class="w-14 h-14 rounded-[18px] overflow-hidden mb-5 shadow-inner border border-white/70 dark:border-white/10">
+          <img src="/app-icon.jpg" alt="Freerun" class="h-full w-full object-cover" />
         </div>
         <h1 class="text-2xl font-heading font-medium text-anthropic-dark dark:text-anthropic-light tracking-tight mb-2">
-          Freerun Web
+          Freerun
         </h1>
       </div>
       <form @submit.prevent="handleSubmit" @focusout="handleInputBlur" class="space-y-5">
@@ -111,17 +110,9 @@
           >
         </div>
         <div class="pt-2">
-          <div class="flex items-center gap-2 mb-3 text-xs">
-            <span :class="proxyOnline ? 'text-green-500' : 'text-red-500'">
-              <i :class="proxyOnline ? 'ri-checkbox-circle-fill' : 'ri-close-circle-fill'"></i>
-            </span>
-            <span class="theme-text-secondary">
-              {{ proxyOnline ? '接口服务可用' : '接口服务不可用' }}
-            </span>
-          </div>
           <button
             type="submit"
-            :disabled="loading || !proxyOnline"
+            :disabled="loading"
             class="btn-apple w-full font-heading font-medium text-base rounded-2xl py-3.5 bg-anthropic-orange text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
             <span v-if="!loading">{{ mode === 'login' ? '立即登录' : '重置密码' }}</span>
@@ -143,7 +134,7 @@
 import { ref, inject, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import AppHeader from '@/components/layout/AppHeader.vue';
-import { api, appConfig } from '@/sdk/app';
+import { api } from '@/sdk/app';
 import { useDataStore } from '@/composables/useDataStore';
 
 const rootShowMessage = inject('showMessage', null);
@@ -158,27 +149,10 @@ const code = ref('');
 const rememberMe = ref(!!rememberLogin.value);
 const loading = ref(false);
 const sending = ref(false);
-const proxyOnline = ref(false);
 const keyboardInset = ref(0);
 const viewportBaseHeight = ref(0);
 let keyboardWasVisible = false;
 let keyboardMeasureTimer = 0;
-
-// 检查代理服务器状态
-async function checkProxyStatus() {
-  if (!appConfig.api.healthUrl) {
-    proxyOnline.value = true;
-    return;
-  }
-
-  try {
-    const resp = await fetch(appConfig.api.healthUrl);
-    const data = await resp.json();
-    proxyOnline.value = data.status === 'ok';
-  } catch (e) {
-    proxyOnline.value = false;
-  }
-}
 
 function showMessage(message, type = 'info') {
   if (appHeaderRef.value?.show) {
@@ -248,9 +222,6 @@ onMounted(() => {
   }
   syncViewportBaseHeight();
   measureKeyboardInset();
-  checkProxyStatus();
-  // 每30秒检查一次代理状态
-  const proxyCheckTimer = setInterval(checkProxyStatus, 30000);
   window.addEventListener('resize', scheduleKeyboardMeasure);
   window.addEventListener('orientationchange', scheduleKeyboardMeasure);
   window.visualViewport?.addEventListener('resize', scheduleKeyboardMeasure);

@@ -1,95 +1,68 @@
-# Freerun 独立全自动打卡服务 (Autorun) 使用指南
+# Freerun 自动任务服务
 
-本指南将教你如何使用 `autorun-local` 独立服务架构，在云服务器（VPS）上实现 24 小时无人值守的全自动定时打卡功能。
+`autorun-local` 是可选服务，只在需要定时跑步、俱乐部自动签到/签退、俱乐部抢报时使用。
 
-由于云函数（如 Vercel）无服务器环境会休眠，导致定时任务中断。如果你拥有自己的一台 24 小时运行的 Linux/Windows 服务器，便可以使用这套专为 PM2 设计的常驻后台服务。
+只用 `Freerun.exe` 手动提交，不需要启动它。
 
----
+## 本机启动
 
-## 架构说明
-
-系统被物理切分为两层，完全解耦：
-1. **云端后台 (`autorun-local/server.js`)**：使用 Node.js 构建的核心打卡引擎。内置地图解析、轨迹生成、签名加密与 `node-cron` 定时器。部署后无需理会，它会默默为您打卡。
-2. **本地前端 (`app/`)**：仅仅作为一个精美的可视化的配置面板。你只需要偶尔在本地启动前端，配置好打卡任务，配置会同步保存到云端的 `tasks.json` 中。
-
----
-
-## 一、部署云端打卡后台 (服务器端操作)
-
-推荐使用常用的 Linux 发行版（如 Ubuntu, CentOS, Debian等），并保证已安装 Node.js (>= 16) 和 PM2。
-
-### 1. 安装与初始化
 ```bash
-# 进入后台目录
 cd autorun-local
-
-# 安装依赖项
+copy .env.example .env
 npm install
-
-# (可选) 安装守护进程管理工具 PM2
-npm install pm2 -g
+npm start
 ```
 
-### 2. (可选) 添加新的校园地图数据
-项目已经在 `autorun-local/maps/` 目录下内置了目前已有的地图文件（以 `.json` 结尾）。后台服务在启动时会自动读取这些内置地图用于轨迹生成，因此 **无需手动创建和迁移**。
-当然，如果将来你需要支持你所属的新学校，只要把做好的地图 JSON 文件放在该目录下，随后重启执行一次 `pm2 restart freerun-autorun` 即可被系统加载。
+macOS/Linux 把 `copy` 换成 `cp`。
 
-### 3. 使用 PM2 启动独立后台进程
-首次部署先复制环境变量模板：
+默认地址是：
+
+```text
+http://127.0.0.1:5891
+```
+
+打开 `Freerun.exe` 后，在管理页填写服务地址并应用。
+
+## 长期运行
+
+需要电脑或服务器长期在线时，可以用 PM2：
+
 ```bash
+cd autorun-local
 cp .env.example .env
-```
-
-`UNIRUN_TARGET` 控制自动任务服务访问的上游地址。如果服务部署在国外出口且无法访问新版 UNIRUN 服务器，应把服务放到国内网络，或将 `UNIRUN_TARGET` 指向可用的国内代理。
-
-公开或多用户部署必须在 `.env` 中设置 `TASK_SECRET`。设置后服务内存仍按原方式调度，但磁盘 `tasks.json` 会用 HMAC 索引和 AES-GCM 加密保存 token；未设置时会保留明文兼容格式，只适合本机单用户。
-
-```env
-TASK_SECRET=replace-with-a-random-local-secret
-AUTORUN_ORIGIN_ALLOWLIST=https://freerun.example.com,http://localhost:5173
-REQUEST_BODY_LIMIT=1mb
-```
-
-修改 `ecosystem.config.js` 后（本项目已内置标准配置），执行：
-```bash
-# 启动持久化守护进程
+npm install
+npm install pm2 -g
 pm2 start ecosystem.config.js
-
-# 保存当前运行的 PM2 进程列表（开机自启防丢失）
 pm2 save
 ```
 
-### 常用后台运维命令
-* **查看进程健康状态**：`pm2 list` （如果 Status 是 online 代表正常运行）
-* **查看实时打卡日志**：`pm2 logs freerun-autorun` （定时任务执行时会在这里打印成功/失败流水日志）
-* **重启进程**：`pm2 restart freerun-autorun` （若更新了配置或地图文件，请重启生效）
-* **停止进程**：`pm2 stop freerun-autorun`
+常用命令：
 
----
+```bash
+pm2 list
+pm2 logs freerun-autorun
+pm2 restart freerun-autorun
+pm2 stop freerun-autorun
+```
 
-## 二、配置定时任务 (本地电脑端操作)
+## 公开部署
 
-后台顺利在服务器跑起来后，你就可以用本地电脑的前端来操控它了。
-
-### 1. 确保前端指向自动任务服务
-前端默认连接当前浏览器所在设备的 `http://127.0.0.1:5891`。如果后台跑在云服务器、局域网电脑或同源反代后面，在管理页的“服务地址”填入实际地址并应用。
-
-也可以在构建前用环境变量固定默认地址：
+公开或多用户部署必须设置 `TASK_SECRET`，否则本地任务文件会使用明文兼容格式。
 
 ```env
-VITE_AUTORUN_SERVER_BASE=https://autorun.example.com
+TASK_SECRET=replace-with-a-random-local-secret
+AUTORUN_ORIGIN_ALLOWLIST=https://your-domain.example.com,http://localhost:5173
+REQUEST_BODY_LIMIT=1mb
 ```
 
-本地开发时，如果配置了 `VITE_AUTORUN_SERVER_BASE`，Vite 会通过 `/autorunserver` 转发到该地址；未配置时直接连接 `http://127.0.0.1:5891`。
+如果服务不在本机，把管理页的服务地址改成实际地址：
 
-### 2. 启动本地可视化操作界面
-在本地开发机器中打开终端，进入 `app` 目录：
-```bash
-cd app
-npm run dev
+```text
+https://autorun.example.com
 ```
 
-### 3. 可视化编辑打卡任务
-浏览器打开 `http://localhost:5173`。在设置中输入你的账号密码，选择需要用的“校园地图”、选择是否开启定时选项，最后点击“保存”。配置参数将实时下发到你的 Linux 服务器并长久生效。
+同源反向代理可以填：
 
-配置完毕后，你**可以立即关闭电脑**。云端 VPS 里的 `pm2` 进程接到了配置，将在你指定的每天特定时辰默默完成校园跑。
+```text
+/autorunserver
+```

@@ -8,17 +8,19 @@
           <i class="ri-hourglass-fill"></i> {{ stats.semesterEndDateText }}
         </div>
       </div>
-      <div class="flex gap-2 pt-2 w-full">
+      <div class="flex gap-2 pt-2 w-full min-w-0">
         <div
           v-for="card in summaryCards"
           :key="card.label"
-          class="flex-1 theme-card-soft rounded-xl p-3 flex flex-col items-center"
+          class="summary-card min-w-0 flex-1 theme-card-soft rounded-xl p-3 flex flex-col items-center"
         >
-          <div class="text-lg theme-text-secondary mb-1">
+          <div class="max-w-full text-lg theme-text-secondary mb-1 truncate">
             {{ card.value }}
           </div>
-          <div class="text-sm font-semibold theme-text-primary mb-1 truncate">{{ card.label }}</div>
-          <div class="text-sm theme-text-secondary mb-2">
+          <div class="max-w-full text-sm font-semibold theme-text-primary mb-1 truncate">
+            {{ card.label }}
+          </div>
+          <div class="max-w-full text-sm theme-text-secondary mb-2 truncate">
             {{ card.detail }}
           </div>
         </div>
@@ -56,11 +58,15 @@
                 @click="mapsLoaded && !submitting ? (showRouteOptions = !showRouteOptions) : null"
               >
                 <div
-                  class="selected-route flex items-center justify-between text-sm theme-text-secondary"
+                  class="selected-route min-w-0 flex items-center justify-between text-sm theme-text-secondary"
                   :class="{ disabled: !mapsLoaded || submitting }"
                 >
-                  <span v-if="!mapsLoaded">加载地图中...</span>
-                  <span v-else>{{ getRouteName(form.route) }}</span>
+                  <span v-if="!mapsLoaded" class="route-name min-w-0 flex-1 truncate pr-2">
+                    加载地图中...
+                  </span>
+                  <span v-else class="route-name min-w-0 flex-1 truncate pr-2">
+                    {{ getRouteName(form.route) }}
+                  </span>
                   <div
                     class="dropdown-arrow"
                     :class="{ active: showRouteOptions && mapsLoaded }"
@@ -99,26 +105,26 @@
                   <span class="text-xs theme-text-tertiary">配速 {{ paceDisplay }}</span>
                 </div>
               </label>
-              <div class="input-container flex items-center gap-2">
-                <div class="input-wrapper flex-1 flex items-center theme-card-soft rounded-md px-3">
+              <div class="input-container flex w-full min-w-0 items-center gap-2">
+                <div class="input-wrapper min-w-0 flex-1 flex items-center theme-card-soft rounded-md px-3">
                   <input
                     v-model.number="form.distance"
                     type="number"
                     step="1"
                     placeholder="输入里程"
                     required
-                    class="flex-1 py-2 text-sm theme-text-secondary outline-none pr-2"
+                    class="min-w-0 w-full flex-1 py-2 text-sm theme-text-secondary outline-none pr-2"
                   />
                   <span class="unit text-sm theme-text-tertiary pl-2">米</span>
                 </div>
                 <div
-                  class="input-wrapper flex-1 flex items-center theme-card-soft rounded-md px-3"
+                  class="input-wrapper min-w-0 flex-1 flex items-center theme-card-soft rounded-md px-3"
                 >
                   <input
                     v-model.number="form.duration"
                     type="number"
                     placeholder="分"
-                    class="flex-1 py-2 text-sm theme-text-secondary outline-none pr-2"
+                    class="min-w-0 w-full flex-1 py-2 text-sm theme-text-secondary outline-none pr-2"
                     @focus="userTyping = true"
                     @blur="onDurationBlur"
                   />
@@ -126,7 +132,7 @@
                 </div>
                 <button
                   type="button"
-                  class="px-3 py-2 theme-card-soft text-sm theme-text-secondary cursor-pointer disabled:opacity-50 rounded-md"
+                  class="shrink-0 px-3 py-2 theme-card-soft text-sm theme-text-secondary cursor-pointer disabled:opacity-50 rounded-md"
                   @click="onRandomFill"
                   :disabled="submitting || randomizing"
                   aria-label="随机里程"
@@ -170,7 +176,7 @@
           </div>
 
           <!-- 定时任务 -->
-          <div v-show="activeTab === 'schedule'" class="space-y-4">
+          <div v-if="!IS_DESKTOP_APP" v-show="activeTab === 'schedule'" class="space-y-4">
             <div v-if="schedulePanelMounted">
               <AutoConfig inline @saved="onAutoConfigSaved" />
             </div>
@@ -202,6 +208,7 @@ import { submitRun as submitRunApi, useRouteGenerator } from '@/composables/useR
 import { useDataStore } from '@/composables/useDataStore';
 import { useThemeStore } from '@/composables/useTheme';
 import { waitForAutorunPingReady } from '@/sdk/autorun';
+import { IS_DESKTOP_APP } from '@/utils/appTarget';
 import {
   calculatePaceMinutesPerKm,
   computeDurationFromDistance,
@@ -213,7 +220,7 @@ import {
 } from '@/utils/run';
 
 const MapPreview = defineAsyncComponent(() => import('./MapPreview.vue'));
-const AutoConfig = defineAsyncComponent(() => import('./AutoConfig.vue'));
+const AutoConfig = IS_DESKTOP_APP ? null : defineAsyncComponent(() => import('./AutoConfig.vue'));
 
 const showMessage = inject('showMessage');
 
@@ -222,10 +229,10 @@ const { userInfo, runStandard, runInfo, activityInfo, submitRunDistance, submitR
 
 const emit = defineEmits(['submitted']);
 
-const tabs = [
+const tabs = computed(() => [
   { key: 'submit', label: '手动提交', icon: 'ri-add-line' },
-  { key: 'schedule', label: '自动提交', icon: 'ri-calendar-schedule-line' },
-];
+  ...(IS_DESKTOP_APP ? [] : [{ key: 'schedule', label: '自动提交', icon: 'ri-calendar-schedule-line' }]),
+]);
 
 const activeTab = ref('submit');
 const schedulePanelMounted = ref(false);
@@ -589,7 +596,7 @@ const onAutoConfigSaved = () => {
 };
 
 const unlockMapRender = async () => {
-  await waitForAutorunPingReady();
+  if (!IS_DESKTOP_APP) await waitForAutorunPingReady();
   mapRenderUnlocked.value = true;
 };
 

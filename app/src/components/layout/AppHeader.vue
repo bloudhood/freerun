@@ -43,11 +43,7 @@
                     class="welcome-sequence-logo h-5 w-5 flex items-center justify-center"
                     :class="{ 'is-visible': welcomePhase !== 'text' }"
                   >
-                    <img
-                      src="/logo.png"
-                      alt="App Logo"
-                      class="max-h-full max-w-full object-contain"
-                    />
+                    <img src="/app-icon.jpg" alt="Freerun" class="h-full w-full rounded-full object-cover" />
                   </div>
 
                   <span
@@ -60,6 +56,17 @@
               </div>
 
               <div class="flex items-center ml-auto mr-3 shrink-0 gap-3 pointer-events-auto">
+                <a
+                  v-if="props.showGithub"
+                  :href="PROJECT_URL"
+                  target="_blank"
+                  rel="noreferrer"
+                  class="inline-flex items-center justify-center h-6 w-6 transition-colors rounded-md header-action-btn"
+                  title="打开项目地址"
+                  aria-label="打开项目地址"
+                >
+                  <i class="ri-github-fill text-[17px]"></i>
+                </a>
                 <button
                   type="button"
                   class="inline-flex items-center justify-center h-6 w-6 transition-colors rounded-md header-action-btn"
@@ -107,6 +114,7 @@ const timers = [];
 const messageVisible = ref(false);
 const messageContent = ref('');
 const messageType = ref('info');
+const PROJECT_URL = 'https://github.com/bloudhood/freerun';
 
 const messageStyles = {
   success: {
@@ -235,20 +243,16 @@ defineExpose({
   height: 24px;
   display: flex;
   align-items: center;
-  --welcome-logo-filter-hidden: brightness(0) saturate(100%) invert(22%) sepia(10%) saturate(341%)
-    hue-rotate(181deg) brightness(92%) contrast(89%) blur(5px);
-  --welcome-logo-filter-visible: brightness(0) saturate(100%) invert(22%) sepia(10%) saturate(341%)
-    hue-rotate(181deg) brightness(92%) contrast(89%) blur(0);
-  --welcome-logo-opacity-visible: 0.82;
+  --welcome-logo-filter-hidden: blur(5px);
+  --welcome-logo-filter-visible: blur(0);
+  --welcome-logo-opacity-visible: 0.94;
   --welcome-text-color: #4b5563;
 }
 
 .welcome-sequence--dark {
-  --welcome-logo-filter-hidden: brightness(0) saturate(100%) invert(92%) sepia(6%) saturate(222%)
-    hue-rotate(182deg) brightness(97%) contrast(93%) blur(5px);
-  --welcome-logo-filter-visible: brightness(0) saturate(100%) invert(92%) sepia(6%) saturate(222%)
-    hue-rotate(182deg) brightness(97%) contrast(93%) blur(0);
-  --welcome-logo-opacity-visible: 0.72;
+  --welcome-logo-filter-hidden: blur(5px);
+  --welcome-logo-filter-visible: blur(0);
+  --welcome-logo-opacity-visible: 0.9;
   --welcome-text-color: #979797;
 }
 

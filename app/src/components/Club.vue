@@ -172,6 +172,7 @@
               </div>
               <div class="flex items-center gap-2">
                 <span
+                  v-if="supportsAutorunFeatures"
                   :class="[
                     'h-6 px-2 rounded-full text-[11px] inline-flex items-center border',
                     clubAutoConfigEnabled
@@ -201,6 +202,7 @@
               class="mt-3 flex items-center justify-between gap-2"
             >
               <button
+                v-if="supportsAutorunFeatures"
                 type="button"
                 :disabled="clubAutoConfigToggling"
                 :class="[
@@ -268,7 +270,7 @@
     </section>
 
     <section
-      v-if="activeMainTab === 'activities' && clubRushTasks.length > 0"
+      v-if="supportsAutorunFeatures && activeMainTab === 'activities' && clubRushTasks.length > 0"
       class="mt-3 rounded-2xl theme-warning-border theme-warning-bg p-3"
     >
       <div class="flex items-center justify-between gap-2">
@@ -374,7 +376,7 @@
             </div>
             <div class="flex items-center gap-2">
               <button
-                v-if="card.rushAction"
+                v-if="supportsAutorunFeatures && card.rushAction"
                 type="button"
                 :disabled="card.rushAction.disabled || isRushActionPending(card)"
                 :class="[
@@ -445,6 +447,7 @@ import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue';
 import { api, appConfig } from '@/sdk/app';
 import { getAutorunClient } from '@/sdk/autorun';
 import { useDataStore } from '@/composables/useDataStore';
+import { IS_DESKTOP_APP } from '@/utils/appTarget';
 import {
   buildClubDateOptions,
   formatClubQueryTime,
@@ -466,6 +469,8 @@ const HISTORY_SUB_TABS = [
   { key: 'record', label: '签到记录' },
   { key: 'semester', label: '学期记录' },
 ];
+
+const supportsAutorunFeatures = !IS_DESKTOP_APP;
 
 const STATUS_OPTIONS_MAP = {
   pending: [
@@ -617,7 +622,10 @@ const cards = computed(() =>
           ? resolveClubAction(item)
           : null,
       rushAction:
-        activeMainTab.value === 'activities' && Number.isFinite(activityId) && activityId > 0
+        supportsAutorunFeatures &&
+        activeMainTab.value === 'activities' &&
+        Number.isFinite(activityId) &&
+        activityId > 0
           ? resolveRushAction(item)
           : null,
       title: item.activityName || '活动 #' + (activityId || index + 1),
@@ -836,12 +844,10 @@ watch(showFilters, async (next) => {
 
 onMounted(async () => {
   document.addEventListener('click', handleDocumentClick);
-  await Promise.all([
-    loadCurrentList(),
-    loadSignTask(),
-    loadClubRushStatus(),
-    loadClubAutoConfigStatus(),
-  ]);
+  const autorunLoaders = supportsAutorunFeatures
+    ? [loadClubRushStatus(), loadClubAutoConfigStatus()]
+    : [];
+  await Promise.all([loadCurrentList(), loadSignTask(), ...autorunLoaders]);
 });
 
 onUnmounted(() => {
@@ -1155,6 +1161,7 @@ async function handleCardAction(card) {
 }
 
 async function handleRushCardAction(card) {
+  if (!supportsAutorunFeatures) return;
   if (!card || !card.rushAction) return;
 
   const activityId = Number(card.activityId);
@@ -1793,6 +1800,11 @@ function normalizeDateOnlyText(raw) {
 }
 
 async function loadClubRushStatus() {
+  if (!supportsAutorunFeatures) {
+    clubRushTasks.value = [];
+    return;
+  }
+
   const autorunClient = getAutorunClient();
   if (!autorunClient || !token.value || activeMainTab.value !== 'activities') {
     clubRushTasks.value = [];
@@ -1854,6 +1866,7 @@ function resolveRushTaskStatusClass(status) {
 }
 
 async function cancelRushTask(task) {
+  if (!supportsAutorunFeatures) return;
   if (!task || !task.canCancel) return;
   const autorunClient = getAutorunClient();
   if (!autorunClient || !token.value) {
@@ -1879,6 +1892,17 @@ async function cancelRushTask(task) {
 }
 
 async function loadClubAutoConfigStatus() {
+  if (!supportsAutorunFeatures) {
+    clubAutoConfigEnabled.value = false;
+    clubAutoSignInStatus.value = '';
+    clubAutoSignOutStatus.value = '';
+    clubAutoSignInWindowAt.value = '';
+    clubAutoSignOutWindowAt.value = '';
+    clubAutoLastAction.value = '';
+    clubAutoLastSuccessAt.value = '';
+    return;
+  }
+
   const autorunClient = getAutorunClient();
   if (!autorunClient || !token.value) {
     clubAutoConfigEnabled.value = false;
@@ -1915,6 +1939,7 @@ async function loadClubAutoConfigStatus() {
 }
 
 async function toggleClubAutoConfig() {
+  if (!supportsAutorunFeatures) return;
   const autorunClient = getAutorunClient();
   if (!autorunClient || clubAutoConfigToggling.value || !token.value) return;
 

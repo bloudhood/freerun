@@ -10,6 +10,12 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+target
+desktop/target
+desktop-dist
+/Freerun
+/Freerun.exe
+/Freerun.exe.WebView2/
 *.local
 
 # Editor directories and files

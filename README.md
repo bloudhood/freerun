@@ -4,7 +4,17 @@
 
 ## 本地使用
 
-只想在自己电脑上用，按下面跑即可。
+Windows 本地使用优先打开根目录的 `Freerun.exe`。
+
+- 不需要启动 `server`、`local-proxy` 或 `autorun-local`
+- 前端页面和 `/devproxy` 已打进 exe
+- “记住我”会保存在本机 WebView 数据里
+
+如果双击后没有反应，先确认系统已安装 Microsoft Edge WebView2 Runtime。Windows 10/11 通常自带。
+
+### 从源码运行
+
+开发或临时调试时再用 Vite：
 
 ```bash
 git clone https://github.com/bloudhood/freerun
@@ -28,6 +38,17 @@ VITE_UNIRUN_API_BASE=https://run-lb.tanmasports.com/v1
 不要直接打开 `app/dist/index.html`，也不要用普通静态服务器跑构建产物。本地模式依赖 Vite 的 `/devproxy` 代理。
 
 不要把 `VITE_API_MODE=direct` 当作日常使用方式。浏览器直连 Unirun 可能被 CORS 或上游安全策略拦截。
+
+### 重新打包 exe
+
+需要 Node.js 和 Rust：
+
+```bash
+npm --prefix app install
+npm run desktop:build
+```
+
+构建完成后使用根目录的 `Freerun.exe`。
 
 ## 网站部署
 
@@ -121,6 +142,7 @@ VITE_AUTORUN_SERVER_BASE=https://autorun.example.com
 | 目录 | 作用 |
 | --- | --- |
 | `app` | Vue 前端 |
+| `desktop` | Windows 桌面版打包 |
 | `server` | 国内服务器/域名 Node 代理 |
 | `local-proxy` | 本机网络轻量代理 |
 | `worker` | Cloudflare Worker 代理示例 |

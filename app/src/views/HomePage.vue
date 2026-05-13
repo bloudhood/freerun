@@ -45,6 +45,7 @@ import MyPage from '@/views/MyPage.vue';
 import { useDataStore } from '@/composables/useDataStore';
 import { useThemeStore } from '@/composables/useTheme';
 import { preloadAutorunPingMeta } from '@/sdk/autorun';
+import { IS_DESKTOP_APP } from '@/utils/appTarget';
 import { getViewportMetrics } from '@/utils/viewport';
 
 const { fetchUserData, activeTab, userInfo, token } = useDataStore();
@@ -130,7 +131,7 @@ async function refreshUserData(options = { background: true }) {
 
 async function initializePage() {
   await refreshUserData({ background: false });
-  await preloadAutorunPingMeta();
+  if (!IS_DESKTOP_APP) await preloadAutorunPingMeta();
 }
 
 async function handleRunSubmitted() {
