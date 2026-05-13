@@ -1,20 +1,16 @@
 # Freerun
 
-校园跑 Web 客户端与代理工具。改自 byrun，适配新版 Unirun 接口；支持 CUIT。
+校园跑桌面工具。改自 byrun，适配新版 Unirun 接口；支持 CUIT。
 
-## 本地使用
+## 使用
 
-Windows 本地使用优先打开根目录的 `Freerun.exe`。
+Windows 用户优先使用发布包里的 `Freerun.exe`，双击即可。
 
 - 不需要启动 `server`、`local-proxy` 或 `autorun-local`
-- 前端页面和 `/devproxy` 已打进 exe
 - “记住我”会保存在本机 WebView 数据里
+- 打不开时，安装 Microsoft Edge WebView2 Runtime
 
-如果双击后没有反应，先确认系统已安装 Microsoft Edge WebView2 Runtime。Windows 10/11 通常自带。
-
-### 从源码运行
-
-开发或临时调试时再用 Vite：
+## 源码开发
 
 ```bash
 git clone https://github.com/bloudhood/freerun
@@ -24,118 +20,19 @@ npm --prefix app install
 npm run dev
 ```
 
-打开终端里显示的 `http://localhost:5173/`。
-
-macOS/Linux 把 `copy` 换成 `cp`。
-
-默认配置：
-
-```env
-VITE_API_MODE=local
-VITE_UNIRUN_API_BASE=https://run-lb.tanmasports.com/v1
-```
-
-不要直接打开 `app/dist/index.html`，也不要用普通静态服务器跑构建产物。本地模式依赖 Vite 的 `/devproxy` 代理。
-
-不要把 `VITE_API_MODE=direct` 当作日常使用方式。浏览器直连 Unirun 可能被 CORS 或上游安全策略拦截。
-
-### 重新打包 exe
-
-需要 Node.js 和 Rust：
+打开终端里显示的 `http://localhost:5173/`。macOS/Linux 把 `copy` 换成 `cp`。
 
 ```bash
-npm --prefix app install
 npm run desktop:build
 ```
 
 构建完成后使用根目录的 `Freerun.exe`。
 
-## 网站部署
+## 可选功能
 
-先构建前端：
-
-```bash
-cd app
-npm install
-npm run build
-```
-
-### 国内域名代理
-
-服务器能访问 Unirun 时使用。
-
-```bash
-cd server
-copy .env.example .env
-npm install
-npm start
-```
-
-前端配置：
-
-```env
-VITE_API_MODE=domain
-VITE_API_BASE_URL=https://api.example.com
-```
-
-公开使用建议配置 `PROXY_TOKEN` 和 `ORIGIN_ALLOWLIST`。
-
-### Cloudflare Pages + 本机代理
-
-适合 Pages 出口访问不了 Unirun、但本机网络可以访问的情况。
-
-本机代理：
-
-```bash
-cd local-proxy
-copy .env.example .env
-npm start
-```
-
-用 Cloudflare Tunnel 或其它隧道暴露 `http://127.0.0.1:18923`，然后在 Pages 配置：
-
-```env
-LOCAL_PROXY_URL=https://proxy.example.com
-LOCAL_PROXY_TOKEN=change-me
-ORIGIN_ALLOWLIST=https://your-pages.pages.dev
-```
-
-前端配置：
-
-```env
-VITE_API_MODE=tunnel
-VITE_TUNNEL_API_BASE=/devproxy
-```
-
-## 可选：自动任务服务
-
-`autorun-local` 用于跑步定时任务、俱乐部自动签到/签退和俱乐部抢报。普通本地使用不需要启动它。
-
-```bash
-cd autorun-local
-copy .env.example .env
-npm install
-npm start
-```
-
-公开或多用户部署必须配置 `TASK_SECRET`，否则 `tasks.json` 会使用兼容的明文 token 格式。
-
-前端默认连接当前浏览器所在设备的 `http://127.0.0.1:5891`。如果 `autorun-local` 跑在局域网电脑、VPS 或同源反代后面，在管理页的“服务地址”填入实际地址并应用即可，地址会保存在浏览器本地。
-
-常见地址：
-
-| 使用方式 | 服务地址 |
-| --- | --- |
-| 本机启动 `autorun-local` 后访问 Pages/本地预览 | `http://127.0.0.1:5891` |
-| 局域网电脑承接服务 | `http://电脑局域网IP:5891` |
-| VPS / 公网域名 | `https://autorun.example.com` |
-| 同源反向代理 | `/autorunserver` |
-
-也可以在构建前固定默认地址：
-
-```env
-VITE_AUTORUN_SERVER_BASE=https://autorun.example.com
-```
+- 自动任务服务：见 `AUTORUN_SERVER_GUIDE.md`
+- 网站/代理部署：按需使用 `server`、`local-proxy` 或 `worker`
+- 公开部署时配置访问限制和密钥，不要裸奔
 
 ## 目录
 
@@ -147,7 +44,6 @@ VITE_AUTORUN_SERVER_BASE=https://autorun.example.com
 | `local-proxy` | 本机网络轻量代理 |
 | `worker` | Cloudflare Worker 代理示例 |
 | `autorun-local` | 可选自动任务服务 |
-
 
 ## 免责声明
 
