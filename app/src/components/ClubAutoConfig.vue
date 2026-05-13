@@ -124,7 +124,7 @@
 
 <script setup>
 import { computed, inject, reactive, ref, watch } from 'vue';
-import { AutorunClient, scheduledTaskConfig } from '@/sdk/autorun';
+import { getAutorunClient } from '@/sdk/autorun';
 import { useDataStore } from '@/composables/useDataStore';
 
 const props = defineProps({
@@ -135,9 +135,6 @@ const emit = defineEmits(['update:visible', 'update:enabled', 'saved']);
 
 const showMessage = inject('showMessage', (message) => alert(message));
 const { token } = useDataStore();
-
-const apiBase = (scheduledTaskConfig.apiBaseUrl || '').replace(/\/$/, '');
-const autorunClient = apiBase ? new AutorunClient({ baseURL: apiBase }) : null;
 
 const loading = ref(false);
 const submitting = ref(false);
@@ -242,6 +239,7 @@ function applyTask(data = {}) {
 }
 
 async function loadStatus() {
+  const autorunClient = getAutorunClient();
   if (!autorunClient || loading.value) return;
   if (!token.value) return;
 
@@ -259,6 +257,7 @@ async function loadStatus() {
 }
 
 async function toggleEnabled() {
+  const autorunClient = getAutorunClient();
   if (!autorunClient || submitting.value) return;
   if (!token.value) return;
 
@@ -277,6 +276,7 @@ async function toggleEnabled() {
 }
 
 async function triggerNow() {
+  const autorunClient = getAutorunClient();
   if (!autorunClient || triggering.value) return;
   if (!token.value) return;
 

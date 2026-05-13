@@ -99,7 +99,18 @@ npm start
 
 公开或多用户部署必须配置 `TASK_SECRET`，否则 `tasks.json` 会使用兼容的明文 token 格式。
 
-前端启用：
+前端默认连接当前浏览器所在设备的 `http://127.0.0.1:5891`。如果 `autorun-local` 跑在局域网电脑、VPS 或同源反代后面，在管理页的“服务地址”填入实际地址并应用即可，地址会保存在浏览器本地。
+
+常见地址：
+
+| 使用方式 | 服务地址 |
+| --- | --- |
+| 本机启动 `autorun-local` 后访问 Pages/本地预览 | `http://127.0.0.1:5891` |
+| 局域网电脑承接服务 | `http://电脑局域网IP:5891` |
+| VPS / 公网域名 | `https://autorun.example.com` |
+| 同源反向代理 | `/autorunserver` |
+
+也可以在构建前固定默认地址：
 
 ```env
 VITE_AUTORUN_SERVER_BASE=https://autorun.example.com

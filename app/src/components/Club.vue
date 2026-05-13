@@ -443,16 +443,22 @@
 <script setup>
 import { computed, inject, onMounted, onUnmounted, ref, watch } from 'vue';
 import { api, appConfig } from '@/sdk/app';
-import { AutorunClient, scheduledTaskConfig } from '@/sdk/autorun';
+import { getAutorunClient } from '@/sdk/autorun';
 import { useDataStore } from '@/composables/useDataStore';
+import {
+  buildClubDateOptions,
+  formatClubQueryTime,
+  formatDateValue,
+  resolveWeekDayNumber,
+} from '@/utils/club';
 
 const MAIN_TABS = [
-  { key: 'activities', label: '活动列表' },
+  { key: 'activities', label: '俱乐部活动' },
   { key: 'history', label: '历史记录' },
 ];
 
 const ACTIVITY_SUB_TABS = [
-  { key: 'list', label: '活动列表' },
+  { key: 'list', label: '可报名' },
   { key: 'myTask', label: '我的任务' },
 ];
 
@@ -494,8 +500,6 @@ const WEEKDAY_TEXT = {
 
 const showMessage = inject('showMessage', () => {});
 const { userInfo, token, loading: userLoading, fetchUserData } = useDataStore();
-const autorunApiBase = (scheduledTaskConfig.apiBaseUrl || '').replace(/\/$/, '');
-const autorunClient = autorunApiBase ? new AutorunClient({ baseURL: autorunApiBase }) : null;
 
 const activeMainTab = ref('activities');
 const activeActivityTab = ref('list');
@@ -550,13 +554,13 @@ const schoolId = computed(() => {
   return Number.isFinite(value) && value > 0 ? value : null;
 });
 
-const dateOptions = computed(() => buildDateOptions());
+const dateOptions = computed(() => buildClubDateOptions());
 const currentQueryDate = computed(() => selectedQueryDate.value || formatDate(new Date()));
 const selectedDateLabel = computed(() => {
   const selected = dateOptions.value.find((item) => item.value === currentQueryDate.value);
   if (selected) return `${selected.label} ${selected.value}`;
   const now = new Date();
-  return `周${WEEKDAY_TEXT[resolveWeekDayNumber(now)]} ${formatDate(now)}`;
+  return `周${WEEKDAY_TEXT[resolveWeekDayNumber(now)]} ${formatDateValue(now)}`;
 });
 const statusOptions = computed(() => {
   if (activeMainTab.value === 'activities') return STATUS_OPTIONS_MAP.pending;
@@ -637,7 +641,7 @@ const cards = computed(() =>
 const currentListTitle = computed(() => {
   if (activeMainTab.value === 'activities') {
     if (activeActivityTab.value === 'myTask') return '我的任务';
-    return `活动列表（${currentQueryDate.value}）`;
+    return `可报名活动（${currentQueryDate.value}）`;
   }
   if (activeHistoryTab.value === 'semester') return '学期记录（queryMySemesterClubActivity）';
   return '历史记录';
@@ -900,41 +904,13 @@ function extractPagedList(response) {
 }
 
 function formatDate(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  return formatDateValue(date);
 }
 
 function formatMonthDay(date) {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${m}-${d}`;
-}
-
-function resolveWeekDayNumber(date) {
-  const day = date.getDay();
-  return day === 0 ? 7 : day;
-}
-
-function buildDateOptions() {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-
-  const end = new Date(start.getFullYear(), 11, 31);
-  const result = [];
-
-  const current = new Date(start);
-  while (current <= end) {
-    const weekDay = resolveWeekDayNumber(current);
-    result.push({
-      value: formatDate(current),
-      label: `周${WEEKDAY_TEXT[weekDay]}`,
-    });
-    current.setDate(current.getDate() + 1);
-  }
-
-  return result;
 }
 
 function resolveActivityId(item) {
@@ -1184,6 +1160,7 @@ async function handleRushCardAction(card) {
   const activityId = Number(card.activityId);
   if (!Number.isFinite(activityId) || activityId <= 0) return;
 
+  const autorunClient = getAutorunClient();
   if (!autorunClient) {
     showMessage('未配置抢报服务地址', 'error');
     return;
@@ -1357,10 +1334,11 @@ async function loadCurrentList() {
       return;
     }
 
+    const queryTime = formatClubQueryTime(currentQueryDate.value);
     const response = await api.queryClubInfo({
       pageNo: 1,
       pageSize: 15,
-      queryTime: currentQueryDate.value,
+      queryTime,
       schoolId: schoolId.value,
       studentId: studentId.value,
     });
@@ -1785,7 +1763,8 @@ function resolveRushAction(item) {
 
 function isFutureActivityItem(item) {
   const fallbackDate =
-    activeMainTab.value === 'activities' && activeActivityTab.value === 'list'
+    activeMainTab.value === 'activities' &&
+    activeActivityTab.value === 'list'
       ? currentQueryDate.value
       : '';
   const dateText = normalizeDateOnlyText(
@@ -1814,6 +1793,7 @@ function normalizeDateOnlyText(raw) {
 }
 
 async function loadClubRushStatus() {
+  const autorunClient = getAutorunClient();
   if (!autorunClient || !token.value || activeMainTab.value !== 'activities') {
     clubRushTasks.value = [];
     return;
@@ -1875,6 +1855,7 @@ function resolveRushTaskStatusClass(status) {
 
 async function cancelRushTask(task) {
   if (!task || !task.canCancel) return;
+  const autorunClient = getAutorunClient();
   if (!autorunClient || !token.value) {
     showMessage('未配置抢报服务地址', 'error');
     return;
@@ -1898,6 +1879,7 @@ async function cancelRushTask(task) {
 }
 
 async function loadClubAutoConfigStatus() {
+  const autorunClient = getAutorunClient();
   if (!autorunClient || !token.value) {
     clubAutoConfigEnabled.value = false;
     clubAutoSignInStatus.value = '';
@@ -1933,6 +1915,7 @@ async function loadClubAutoConfigStatus() {
 }
 
 async function toggleClubAutoConfig() {
+  const autorunClient = getAutorunClient();
   if (!autorunClient || clubAutoConfigToggling.value || !token.value) return;
 
   clubAutoConfigToggling.value = true;

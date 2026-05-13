@@ -26,6 +26,10 @@ const {
   serializeTasksForDisk,
 } = require('./token-store');
 const {
+  buildRunPlan,
+  buildTaskStatusPayload,
+} = require('./run-core');
+const {
   buildCorsHeaders,
   isOriginAllowed,
   parseAllowList,
@@ -412,95 +416,6 @@ function genTrackPoints(distance, mapId = 'default', durationMinutes) {
 }
 
 // ──────────────────────────────────────────────
-//  7. 随机距离和时间生成（与前端逻辑一致）
-// ──────────────────────────────────────────────
-const DEFAULT_DISTANCE_MIN = 1001;
-const DEFAULT_DISTANCE_MAX = 9000;
-const MIN_PACE = 6;
-const MAX_PACE = 10;
-
-function randomIntNonThousand(min = DEFAULT_DISTANCE_MIN, max = DEFAULT_DISTANCE_MAX) {
-  const lo = Math.min(min, max);
-  const hi = Math.max(min, max);
-  for (let i = 0; i < 64; i++) {
-    const v = lo + Math.floor(Math.random() * (hi - lo + 1));
-    if (v % 10 !== 0) return v;
-  }
-  return lo + Math.floor(Math.random() * (hi - lo + 1));
-}
-
-function computeRunTime(distanceMeters, minMinutes = 0, maxMinutes = 0) {
-  const km = distanceMeters / 1000;
-  let minPace = MIN_PACE;
-  let maxPace = MAX_PACE;
-  if (minMinutes > 0) minPace = Math.max(minPace, minMinutes / km);
-  if (maxMinutes > 0) maxPace = Math.min(maxPace, maxMinutes / km);
-
-  const pace = minPace <= maxPace
-    ? minPace + (maxPace - minPace) * Math.random()
-    : MIN_PACE + (MAX_PACE - MIN_PACE) * Math.random();
-
-  let seconds = Math.round(km * pace * 60);
-
-  // 避免整千秒
-  if (seconds % 1000 === 0) seconds += Math.floor(Math.random() * 55) + 5;
-
-  let duration = Math.max(1, Math.round(seconds / 60));
-  if (minMinutes > 0 && duration < Math.ceil(minMinutes)) duration = Math.ceil(minMinutes);
-  if (maxMinutes > 0 && duration > Math.floor(maxMinutes)) duration = Math.floor(maxMinutes);
-
-  // 避免整十分钟
-  if (duration % 10 === 0) duration += 1;
-
-  return duration;
-}
-
-function resolveDistanceBounds(runStandard, gender) {
-  const g = String(gender || '').trim();
-  const isM = ['1', 'male', 'm'].includes(g.toLowerCase());
-  const isF = ['2', 'female', 'f'].includes(g.toLowerCase());
-
-  const boyMin = Number(runStandard?.boyOnceDistanceMin || 0);
-  const boyMax = Number(runStandard?.boyOnceDistanceMax || 0);
-  const girlMin = Number(runStandard?.girlOnceDistanceMin || 0);
-  const girlMax = Number(runStandard?.girlOnceDistanceMax || 0);
-
-  let onceMin = 0, onceMax = 0;
-  if (isM) { onceMin = boyMin; onceMax = boyMax; }
-  else if (isF) { onceMin = girlMin; onceMax = girlMax; }
-  else { onceMin = Math.max(boyMin, girlMin); onceMax = Math.max(boyMax, girlMax); }
-
-  let distMin = DEFAULT_DISTANCE_MIN;
-  let distMax = DEFAULT_DISTANCE_MAX;
-  if (onceMin > 0) distMin = Math.max(1, Math.trunc(onceMin) + 1);
-  if (onceMax > 0) distMax = Math.max(distMin, Math.trunc(onceMax) + 1001);
-
-  return { distMin, distMax };
-}
-
-function resolveTimeBounds(runStandard, gender) {
-  const g = String(gender || '').trim();
-  const isM = ['1', 'male', 'm'].includes(g.toLowerCase());
-  const isF = ['2', 'female', 'f'].includes(g.toLowerCase());
-
-  const boyMin = Number(runStandard?.boyOnceTimeMin || 0);
-  const boyMax = Number(runStandard?.boyOnceTimeMax || 0);
-  const girlMin = Number(runStandard?.girlOnceTimeMin || 0);
-  const girlMax = Number(runStandard?.girlOnceTimeMax || 0);
-
-  let timeMin = 0, timeMax = 0;
-  if (isM) { timeMin = boyMin; timeMax = boyMax; }
-  else if (isF) { timeMin = girlMin; timeMax = girlMax; }
-  else {
-    if (boyMin > 0 && girlMin > 0) timeMin = Math.min(boyMin, girlMin);
-    else timeMin = boyMin > 0 ? boyMin : girlMin;
-    timeMax = Math.max(boyMax, girlMax);
-  }
-
-  return { timeMin, timeMax };
-}
-
-// ──────────────────────────────────────────────
 //  8. 执行真实打卡
 // ──────────────────────────────────────────────
 async function executeRun(token, task) {
@@ -520,10 +435,10 @@ async function executeRun(token, task) {
   const runStandard = await getRunStandard(token, schoolId);
 
   // 3. 随机生成距离和时间
-  const { distMin, distMax } = resolveDistanceBounds(runStandard, gender);
-  const { timeMin, timeMax } = resolveTimeBounds(runStandard, gender);
-  const runDistance = randomIntNonThousand(distMin, distMax);
-  const runTime = computeRunTime(runDistance, timeMin, timeMax);
+  const { runDistance, runTime } = buildRunPlan({
+    userInfo: { ...userInfo, gender },
+    runStandard,
+  });
 
   console.log(`[run] 生成参数: distance=${runDistance}m  time=${runTime}min  map=${task.map_id}`);
 
@@ -548,6 +463,31 @@ async function executeRun(token, task) {
   throw new Error(result?.msg || '打卡失败，未知错误');
 }
 
+async function buildStatusForToken(token, task, now = new Date()) {
+  let nextRun = null;
+  let shouldSave = false;
+
+  if (task?.map_id) {
+    try {
+      const userInfo = task.user_info || (await getUserInfo(token));
+      if (!task.user_info && userInfo && Object.keys(userInfo).length > 0) {
+        task.user_info = userInfo;
+        shouldSave = true;
+      }
+
+      if (userInfo?.schoolId) {
+        const runStandard = await getRunStandard(token, userInfo.schoolId);
+        nextRun = buildRunPlan({ userInfo, runStandard });
+      }
+    } catch (error) {
+      console.warn(`[status] 生成下次随机数据失败 token=${maskToken(token)}: ${error.message}`);
+    }
+  }
+
+  if (shouldSave) saveTasks();
+  return buildTaskStatusPayload(task, { now, nextRun });
+}
+
 // ──────────────────────────────────────────────
 //  9. API 路由
 // ──────────────────────────────────────────────
@@ -563,19 +503,26 @@ app.get('/api/maps', (req, res) => {
 });
 
 // 注册/更新定时任务配置（前端保存时调用）
-app.post('/api/register', (req, res) => {
+app.post('/api/register', async (req, res) => {
   const token = req.headers['authorization']?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
   const { map_id, enabled, cron: cronExpr } = req.body;
   if (!tasks[token]) tasks[token] = {};
+  let userInfo = tasks[token].user_info || null;
+  try {
+    userInfo = await getUserInfo(token);
+  } catch (error) {
+    console.warn(`[register] 获取用户信息失败 token=${maskToken(token)}: ${error.message}`);
+  }
+
   Object.assign(tasks[token], {
     map_id,
     enabled: enabled === 1 || enabled === true,
     cron: cronExpr,
     last_run_at: tasks[token].last_run_at || null,
     executed: tasks[token].executed || false,
-    user_info: tasks[token].user_info || null,
+    user_info: userInfo || tasks[token].user_info || null,
   });
   saveTasks();
 
@@ -591,14 +538,12 @@ app.post('/api/config', (req, res) => {
 });
 
 // 查询今日执行状态
-app.post('/api/status', (req, res) => {
+app.post('/api/status', async (req, res) => {
   const token = req.headers['authorization']?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ success: false, message: 'Unauthorized' });
   const task = tasks[token] || {};
-  res.json({
-    success: true,
-    data: { executed: task.executed || false, last_run_at: task.last_run_at || null },
-  });
+  const data = await buildStatusForToken(token, task);
+  res.json({ success: true, data });
 });
 
 // ──────────────────────────────────────────────
@@ -609,7 +554,13 @@ app.post('/api/status', (req, res) => {
 cron.schedule('0 0 * * *', () => {
   let resetCount = 0;
   Object.values(tasks).forEach(t => {
-    if (t.executed) { t.executed = false; resetCount++; }
+    if (t.executed || t.today_executed || t.today_success || t.today_result) {
+      t.executed = false;
+      t.today_executed = false;
+      t.today_success = false;
+      t.today_result = '';
+      resetCount++;
+    }
   });
   if (resetCount > 0) {
     saveTasks();
@@ -641,10 +592,21 @@ cron.schedule('* * * * *', async () => {
     try {
       const result = await executeRun(token, task);
       task.last_run_at = now.toISOString();
+      task.last_attempt_at = now.toISOString();
+      task.last_scheduled = task.cron || '';
       task.executed = true;
+      task.today_executed = true;
+      task.today_success = true;
+      task.today_result = '成功';
       saveTasks();
       console.log(`[cron] ✅ 打卡成功: distance=${result.runDistance}m time=${result.runTime}min desc=${result.resultDesc}`);
     } catch (err) {
+      task.last_attempt_at = now.toISOString();
+      task.last_scheduled = task.cron || '';
+      task.today_executed = true;
+      task.today_success = false;
+      task.today_result = err.message;
+      saveTasks();
       console.error(`[cron] ❌ 打卡失败 token=${maskToken(token)}: ${err.message}`);
     }
   }

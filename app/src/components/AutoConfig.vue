@@ -17,6 +17,22 @@
           <p class="theme-text-primary text-xs font-bold">连接失败</p>
           <p class="theme-text-secondary text-[10px] mt-1 line-clamp-2">{{ initError }}</p>
         </div>
+        <div class="w-full max-w-[260px] space-y-2 px-2">
+          <label class="text-[10px] font-black theme-text-tertiary uppercase tracking-widest ml-1"
+            >服务地址</label
+          >
+          <input
+            v-model.trim="serviceBaseInput"
+            type="text"
+            :class="ui.serviceInput"
+            placeholder="http://127.0.0.1:5891"
+            @keyup.enter="applyServiceBase"
+          />
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" @click="applyServiceBase" :class="ui.smallButton">应用</button>
+            <button type="button" @click="resetServiceBase" :class="ui.secondaryButton">本机</button>
+          </div>
+        </div>
         <button
           type="button"
           @click="init"
@@ -55,6 +71,22 @@
         </div>
 
         <div :class="ui.fields">
+          <div :class="ui.fieldItem">
+            <label class="text-[10px] font-black theme-text-tertiary uppercase tracking-widest ml-1"
+              >服务地址</label
+            >
+            <div class="flex items-center gap-2">
+              <input
+                v-model.trim="serviceBaseInput"
+                type="text"
+                :class="ui.serviceInput"
+                placeholder="http://127.0.0.1:5891"
+                @keyup.enter="applyServiceBase"
+              />
+              <button type="button" @click="applyServiceBase" :class="ui.smallButton">应用</button>
+            </div>
+          </div>
+
           <div :class="ui.fieldItem">
             <label class="text-[10px] font-black theme-text-tertiary uppercase tracking-widest ml-1"
               >学校地图</label
@@ -217,7 +249,14 @@
 
 <script setup>
 import { ref, reactive, computed, watch, inject } from 'vue';
-import { AutorunClient, pingMeta, scheduledTaskConfig } from '@/sdk/autorun';
+import {
+  autorunServerBase,
+  getAutorunClient,
+  pingMeta,
+  preloadAutorunPingMeta,
+  resetAutorunServerBase,
+  setAutorunServerBase,
+} from '@/sdk/autorun';
 import { useDataStore } from '@/composables/useDataStore';
 
 const props = defineProps({
@@ -228,14 +267,13 @@ const emit = defineEmits(['update:visible', 'saved']);
 const showMessage = inject('showMessage', (msg) => alert(msg));
 
 const { token } = useDataStore();
-const API_BASE = (scheduledTaskConfig.apiBaseUrl || '').replace(/\/$/, '');
-const autorunClient = new AutorunClient({ baseURL: API_BASE });
 
 const pinging = ref(true);
 const initError = ref(null);
 const submitting = ref(false);
 const showMapList = ref(false);
 const serviceVersion = ref('--');
+const serviceBaseInput = ref(autorunServerBase.value);
 
 const maps = ref([]);
 const status = ref(null);
@@ -254,6 +292,12 @@ const ui = computed(() =>
         fieldItem: 'space-y-1',
         mapTrigger:
           'flex items-center justify-between theme-card-soft rounded-xl px-3 py-2 cursor-pointer transition-all',
+        serviceInput:
+          'min-w-0 flex-1 h-9 px-3 text-[11px] font-mono theme-input theme-card-soft rounded-xl outline-none',
+        smallButton:
+          'h-9 px-3 rounded-xl theme-button-primary text-[10px] font-black transition-all active:scale-[0.97]',
+        secondaryButton:
+          'h-9 px-3 rounded-xl theme-card-soft theme-link text-[10px] font-black transition-all active:scale-[0.97]',
         saveButton:
           'w-full theme-button-primary py-2 rounded-xl font-black text-[14px] uppercase tracking-widest transition-all active:scale-[0.97] disabled:opacity-20 flex items-center justify-center gap-2',
       }
@@ -268,6 +312,12 @@ const ui = computed(() =>
         fieldItem: 'space-y-1.5',
         mapTrigger:
           'flex items-center justify-between theme-card-soft rounded-xl px-4 py-2.5 cursor-pointer transition-all',
+        serviceInput:
+          'min-w-0 flex-1 h-10 px-3 text-[11px] font-mono theme-input theme-card-soft rounded-xl outline-none',
+        smallButton:
+          'h-10 px-3 rounded-xl theme-button-primary text-[10px] font-black transition-all active:scale-[0.97]',
+        secondaryButton:
+          'h-10 px-3 rounded-xl theme-card-soft theme-link text-[10px] font-black transition-all active:scale-[0.97]',
         saveButton:
           'w-full theme-button-primary py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-[0.97] disabled:opacity-20 flex items-center justify-center gap-2',
       },
@@ -422,6 +472,12 @@ const getAuthToken = () => {
   return value;
 };
 
+function requireAutorunClient() {
+  const client = getAutorunClient();
+  if (!client) throw new Error('自动任务服务地址未配置');
+  return client;
+}
+
 const parseCronToTime = (cronExpr) => {
   if (!cronExpr) return { h: 8, m: 0 };
 
@@ -461,10 +517,9 @@ const applyInitPayload = ({ mapsData, configData, statusData, version }) => {
 };
 
 const fetchInitPayload = async () => {
-  if (!API_BASE) {
-    throw new Error('Scheduled task service URL is not configured');
-  }
+  const autorunClient = requireAutorunClient();
   const currentToken = getAuthToken();
+  await preloadAutorunPingMeta();
   const [mapsEnvelope, configEnvelope, statusEnvelope] = await Promise.all([
     autorunClient.getMaps(),
     autorunClient.getConfig(currentToken),
@@ -477,6 +532,16 @@ const fetchInitPayload = async () => {
     configData: configEnvelope?.data,
     statusData: statusEnvelope?.data,
   };
+};
+
+const applyServiceBase = async () => {
+  serviceBaseInput.value = setAutorunServerBase(serviceBaseInput.value);
+  await init();
+};
+
+const resetServiceBase = async () => {
+  serviceBaseInput.value = resetAutorunServerBase();
+  await init();
 };
 
 const init = async () => {
@@ -502,6 +567,7 @@ const handleSave = async () => {
 
   submitting.value = true;
   try {
+    const autorunClient = requireAutorunClient();
     const currentToken = getAuthToken();
     const cronExpr = String(timeObj.m) + ' ' + String(timeObj.h) + ' * * *';
 
@@ -523,6 +589,10 @@ const handleSave = async () => {
     submitting.value = false;
   }
 };
+
+watch(autorunServerBase, (value) => {
+  serviceBaseInput.value = value;
+});
 
 const close = () => {
   showMapList.value = false;

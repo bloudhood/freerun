@@ -273,14 +273,18 @@ export class AppApiClient {
   }
 
   queryClubInfo({ queryTime, schoolId, studentId, pageNo = 1, pageSize = 15 } = {}) {
+    const params = {
+      pageNo,
+      pageSize,
+      schoolId,
+      studentId,
+    };
+    if (queryTime !== undefined && queryTime !== null && `${queryTime}`.trim() !== '') {
+      params.queryTime = queryTime;
+    }
+
     return this.http.get('/clubactivity/queryActivityList', {
-      params: {
-        pageNo,
-        pageSize,
-        queryTime,
-        schoolId,
-        studentId,
-      },
+      params,
     });
   }
 

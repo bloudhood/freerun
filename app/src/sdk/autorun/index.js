@@ -1,60 +1,84 @@
 import { ref } from 'vue';
 import { ApiBusinessError, AutorunClient } from './client';
+import {
+  readAutorunState,
+  readStoredAutorunServerBase,
+  resolveAutorunServerBase,
+  writeAutorunState,
+  writeStoredAutorunServerBase,
+} from './config';
 
-const AUTORUN_STATE_STORAGE_KEY = 'unirun.autorun_state';
 const AUTORUN_SERVER_BASE = (import.meta.env.VITE_AUTORUN_SERVER_BASE || '').trim();
 
-export const scheduledTaskConfig = {
-  apiBaseUrl: import.meta.env.DEV && AUTORUN_SERVER_BASE ? '/autorunserver' : AUTORUN_SERVER_BASE,
-};
-
-const API_BASE = (scheduledTaskConfig.apiBaseUrl || '').replace(/\/$/, '');
-const autorunClient = API_BASE ? new AutorunClient({ baseURL: API_BASE }) : null;
-
-const getCachedPingMeta = () => {
+function getLocalStorage() {
   if (typeof window === 'undefined') return null;
-
   try {
-    const raw = window.localStorage.getItem(AUTORUN_STATE_STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : null;
-    const value = parsed?.pingMeta ?? null;
-    return value && typeof value === 'object' ? value : null;
+    return window.localStorage || null;
   } catch {
     return null;
   }
+}
+
+function resolveInitialApiBaseUrl() {
+  return resolveAutorunServerBase({
+    configuredBase: AUTORUN_SERVER_BASE,
+    storedBase: readStoredAutorunServerBase(getLocalStorage()),
+    isDev: import.meta.env.DEV,
+  });
+}
+
+export const autorunServerBase = ref(resolveInitialApiBaseUrl());
+
+export const scheduledTaskConfig = {
+  get apiBaseUrl() {
+    return autorunServerBase.value;
+  },
+};
+
+export function getAutorunClient() {
+  const baseURL = (autorunServerBase.value || '').replace(/\/+$/, '');
+  return baseURL ? new AutorunClient({ baseURL }) : null;
+}
+
+function resetPingState() {
+  pingMeta.value = null;
+  pingReady.value = false;
+  pingRequestPromise = null;
+  setCachedPingMeta(null);
+}
+
+export function setAutorunServerBase(value) {
+  const base = writeStoredAutorunServerBase(getLocalStorage(), value);
+  autorunServerBase.value = base || resolveInitialApiBaseUrl();
+  resetPingState();
+  return autorunServerBase.value;
+}
+
+export function resetAutorunServerBase() {
+  writeStoredAutorunServerBase(getLocalStorage(), '');
+  autorunServerBase.value = resolveInitialApiBaseUrl();
+  resetPingState();
+  return autorunServerBase.value;
+}
+
+const getCachedPingMeta = () => {
+  const value = readAutorunState(getLocalStorage()).pingMeta ?? null;
+  return value && typeof value === 'object' ? value : null;
 };
 
 const setCachedPingMeta = (value) => {
-  if (typeof window === 'undefined') return;
-
-  try {
-    const raw = window.localStorage.getItem(AUTORUN_STATE_STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : null;
-    const state = parsed && typeof parsed === 'object' ? parsed : {};
-
-    if (!value || typeof value !== 'object') {
-      delete state.pingMeta;
-      if (Object.keys(state).length === 0) {
-        window.localStorage.removeItem(AUTORUN_STATE_STORAGE_KEY);
-        return;
-      }
-
-      window.localStorage.setItem(AUTORUN_STATE_STORAGE_KEY, JSON.stringify(state));
-      return;
-    }
-
-    window.localStorage.setItem(
-      AUTORUN_STATE_STORAGE_KEY,
-      JSON.stringify({
-        ...state,
-        pingMeta: value,
-      }),
-    );
-  } catch {}
+  const storage = getLocalStorage();
+  const state = readAutorunState(storage);
+  if (!value || typeof value !== 'object') {
+    delete state.pingMeta;
+  } else {
+    state.pingMeta = value;
+  }
+  writeAutorunState(storage, state);
 };
 
 export const pingMeta = ref(getCachedPingMeta());
-export const pingReady = ref(!autorunClient);
+export const pingReady = ref(false);
 
 const pingReadyWaiters = new Set();
 let pingRequestPromise = null;
@@ -64,15 +88,19 @@ export const preloadAutorunPingMeta = async () => {
   if (pingRequestPromise) return pingRequestPromise;
 
   pingRequestPromise = (async () => {
-    if (!autorunClient) {
+    const client = getAutorunClient();
+    const requestBase = autorunServerBase.value;
+    if (!client) {
       pingReady.value = true;
       return pingMeta.value;
     }
 
     try {
-      const envelope = await autorunClient.ping();
-      pingMeta.value = envelope?.data || null;
-      setCachedPingMeta(pingMeta.value);
+      const envelope = await client.ping();
+      if (requestBase === autorunServerBase.value) {
+        pingMeta.value = envelope?.data || null;
+        setCachedPingMeta(pingMeta.value);
+      }
     } catch (error) {
       console.error('Failed to preload /ping metadata:', error);
     } finally {
